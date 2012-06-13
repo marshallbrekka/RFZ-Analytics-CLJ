@@ -24,5 +24,5 @@
      [:script "getData()"]]))
 
 (defpage [:get "/api"] []
-  (resp/json (record-retriever/get-all :total)))
+  (resp/json (record-retriever/get-using-user-ids :total)))
      

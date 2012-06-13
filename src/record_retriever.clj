@@ -71,7 +71,7 @@
 
 
 (defn- merge-by-total [points]
-  (log (str "mbt start" (count points)))
+  ;(log (str "mbt start" (count points)))
  ; (log (first points))
   ;(println (count final))
   ;(println (count point))
@@ -98,14 +98,15 @@
 
 
 (defn- post-merge-by-average [point]
+  (log "post merge")
   (assoc (:point point) :balance (/ (:balance (:point point)) (:count point))))
 
 
 (defn- merge-data [data merge-fn post-merge-fn]
   ;(println "md")
-  ;(println (count data))
+  (log (count data))
   (let [data (sort-by :ts data)]
-    (println "merge-data")
+    (log "merge-data")
     (reduce post-merge-fn nil (map merge-fn (partition-by :ts data)))))                
   
 (def render-styles {
@@ -114,18 +115,35 @@
 
 
 
-(defn- run-query [start limit]
-  (mongo/get-cursor "balance" {:limit limit :skip start :sort {:user-id 1} :only {:user-id 1 :ts 1 :accounts 1}}))
+(defn- run-query [start limit user-id]
+  (time (seq
+  (mongo/get-cursor "balance" {:where {:user-id user-id} :limit limit :skip start :sort {:user-id 1} :only {:user-id 1 :ts 1 :accounts 1}}))))
 
 
-(defn- get-records-lazy [start limit]
+
+
+(defn- get-records-lazy [start limit user-id]
   (let [stop (if (> limit 1000) 1000 limit)]
-    (take-while (fn [a] (not= a nil)) (mapcat (fn [start] (run-query start stop)) (range start limit 1000) )))) 
+    (take-while (fn [a] (not= a nil)) (mapcat (fn [start] (run-query start stop user-id)) (range start limit 1000) )))) 
+
 
 
 (defn get-all [render]
-  (let [fns (render render-styles) data (mapcat (:filter fns) (partition-by :user-id (filter (fn [a] (not= a nil)) (map filter-point (get-records-lazy 0 300000)))))]
+  (let [fns (render render-styles) 
+        data (mapcat (:filter fns) (partition-by :user-id (filter (fn [a] (not= a nil)) (map filter-point (get-records-lazy 0 1000000)))))]
     (merge-data data (:merge fns) (:post-merge fns))))
+
+
+
+(defn get-using-user-ids [render]
+  (let [fns (render render-styles)
+        user-ids (mongo/get-distinct "balance" "user-id")
+        data (mapcat (fn [pts] 
+                  ((:filter fns) (filter (fn [a] (not= a nil)) (map filter-point pts))))
+                    
+                  (map (fn [user-id] (run-query 0 400 user-id)) user-ids))]
+    (merge-data data (:merge fns) (:post-merge fns))))
+
 
   
 

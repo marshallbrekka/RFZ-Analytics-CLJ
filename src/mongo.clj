@@ -1,6 +1,6 @@
 (ns mongo
   (:use 
-    [somnium.congomongo :as cm :only [make-connection set-connection! fetch]]
+    [somnium.congomongo :as cm :only [make-connection set-connection! fetch distinct-values]]
     [somnium.congomongo.coerce :as cmc :only [coerce]])
   (:require 
     ;[app.config :as config]
@@ -20,6 +20,9 @@
 (defn get-cursor [collection options]
   ;(assoc options :as :mongo)
   (apply fetch collection (mapcat identity options)))
+
+(defn get-distinct [collection dis-key]
+  (distinct-values collection dis-key))
 
 
 (defn has-next? [cursor]
