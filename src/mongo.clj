@@ -1,5 +1,13 @@
 (ns mongo
-  (:use somnium.congomongo))
+  (:use 
+    [somnium.congomongo :as cm :only [make-connection set-connection! fetch]]
+    [somnium.congomongo.coerce :as cmc :only [coerce]])
+  (:require 
+    ;[app.config :as config]
+    ;[app.util.io :as io]
+    [clojure.data.csv :as csv]
+    [clojure.tools.logging :as lg])
+  )
 
 (defn connect
   ([db host port]
@@ -10,7 +18,7 @@
 
  
 (defn get-cursor [collection options]
-  (.iterator (apply fetch collection options)))
+  (apply fetch (cons collection (mapcat identity (assoc options :as :mongo)))))
 
 (defn has-next? [cursor]
   (.hasNext cursor))
