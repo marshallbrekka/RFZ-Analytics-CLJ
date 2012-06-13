@@ -18,7 +18,9 @@
 
  
 (defn get-cursor [collection options]
-  (apply fetch (cons collection (mapcat identity (assoc options :as :mongo)))))
+  ;(assoc options :as :mongo)
+  (apply fetch collection (mapcat identity options)))
+
 
 (defn has-next? [cursor]
   (.hasNext cursor))

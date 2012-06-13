@@ -2,7 +2,7 @@
   
    (:require
     [mongo]
-    [clojure.contrib.math :as math]
+    ;[clojure.contrib.math :as math]
     ;[app.config :as config]
     ;[app.util.io :as io]
     [clojure.data.csv :as csv]
@@ -13,12 +13,15 @@
 (mongo/connect "analytics")
 (declare filter-point)
 (declare get-day)
+(defn now [] (java.util.Date.))
+(defn log [msg]
+  (println (now) msg))
 
 
 (defn- receive-each [item all filter-fn]
    (if (or (empty?(:group all))
           (and (not= item nil) 
-               (= (:user-id item) (:user-id ((:group all) 0)))))
+               (= (:user-id item) (:user-id (first (:group all))))))
     (update-in all [:group] conj (filter-point item))
         (assoc all :final (concat (:final all) 
         (filter-fn (sort-by :ts (:group all)))) :group [(filter-point item)])))
@@ -29,7 +32,10 @@
 
 (defn- filter-point 
   ([point offset] 
-    (if (or (= point nil) (= (:ts point) nil)) nil
+   ;(println "fp")
+   ;(println point)
+   ;(println "pt ts : " (:ts point))
+    (when (and (:ts point) (not= (:ts point) 0))
       (let [
             balance (get-balance (:accounts point)) 
             ts (- (get-day (:ts point)) offset)]
@@ -38,83 +44,88 @@
 
 
 (defn- balances-to-deltas [points]
+  (log "btp")
+  ;(println (count points))
+
   
-  (let [balances (map :balance points)
+  (let [balances (map :balance points) start (now)
       deltas (map #(- %2 %1) balances (rest balances))]
     (let [x (cons 
       (first points) 
       (map (fn [orig diff] 
           (assoc orig :balance diff)) (rest points) deltas)) ]
-      (println "post btd map")
+      (log (str "post btd map" (count points)))
                  x)))
 
 (defn- balances-to-percent-change [points]
   (let [average (/ (reduce + (map :balance points)) (count points))]
-    (map (fn [point] (assoc point :balance (/ (:balance point) average))) points))) 
+    (map (fn [point] (update-in point [:balance] / average)) points)))
+
 
 (defn- get-day [ts]
   (let [ts 
         (if (> ts 1000000000000)
           (/ ts 1000)
           ts)]
-    (* (int (math/floor (float (/ ts (* 60 60 24))))) 60 60 24 1000)))
+    (* (int (Math/floor (float (/ ts (* 60 60 24))))) 60 60 24 1000)))
 
 
-(defn- merge-by-total [final point]
-  (println "mbt start")
-  (cond 
-    (empty? final) [(assoc point :ts (:ts point))]
-    (= (:ts (last final)) (:ts point))
-      (conj (subvec final 0 (- (count final) 1)) (assoc (last final) :balance (+ (:balance point) (:balance (last final)))))
-    :else (conj final {:ts (:ts point) :balance (+ (:balance point) (:balance (last final)))})))
+(defn- merge-by-total [points]
+  (log (str "mbt start" (count points)))
+ ; (log (first points))
+  ;(println (count final))
+  ;(println (count point))
+  (reduce (fn [a b]
+            ;(log (str "a: " a " b: " b))
+            [(:ts b) (+ (:balance b) (last a))]) [0 0] points))
 
-(defn- post-merge-by-total [point]
-  (println "post mbt")
-  point)
+
+
+(defn- post-merge-by-total [final point]
+ ;(println "post mbt")
+  (let [fin (if (nil? final) [] final) prev-bal (if (nil? final) 0 (last (last final)))]
+    (conj fin [(first point) (+ prev-bal (double (/ (Math/round (float (* (last point) 100))) 100)))])))
+
+
 
 (defn- merge-by-average [final point]
   (cond
     (empty? final) [{:count 1 :point (assoc point :ts (:ts point))}]
     (= (:ts (:point (last final))) (:ts point))
-      (conj (subvec final 0 (- (count final) 1)) (assoc (last final) :count (+ 1 (:count (last final))) :point (assoc (:point (last final)) :balance (+ (:balance point) (:balance (:point (last final)))))))
+      (let [last-pos (dec (count final))]
+        (update-in (update-in [last-pos :count] inc) [last-pos :point :balance] + (:balance (:point (last final)))))
    :else (conj final {:count 1 :point (assoc point :ts (:ts point))})))
+
 
 (defn- post-merge-by-average [point]
   (assoc (:point point) :balance (/ (:balance (:point point)) (:count point))))
 
 
 (defn- merge-data [data merge-fn post-merge-fn]
+  ;(println "md")
+  ;(println (count data))
   (let [data (sort-by :ts data)]
     (println "merge-data")
-      (map (fn [data] 
-          (let [d (post-merge-fn data)]
-            [(:ts d) 
-             (double (/ (math/round 
-                          (float 
-                            (* (:balance d) 100))) 
-                        100)
-                     )]
-            ))(reduce merge-fn [] data))))
-                
+    (reduce post-merge-fn nil (map merge-fn (partition-by :ts data)))))                
   
 (def render-styles {
   :total {:filter balances-to-deltas :merge merge-by-total :post-merge post-merge-by-total}
   :average {:filter balances-to-percent-change :merge merge-by-average :post-merge post-merge-by-average}})
 
-(defn- get-helper [cursor all render-key]
-  (if (mongo/has-next? cursor)
-    (get-helper cursor (receive-each (mongo/get-next cursor) all (:filter render-key)) render-key)
-    (merge-data (:final (receive-each nil all (:filter render-key))) (:merge render-key) (:post-merge render-key))))
-
-(defn get-records []
-  (let [cursor (mongo/get-cursor "balances" {:limit 1000 :sort {:user-id 1} :only {:user-id 1 :ts 1 :accounts 1}})
-        all {:group [] :final []}]
-    (get-helper cursor all (:total render-styles))))
 
 
+(defn- run-query [start limit]
+  (mongo/get-cursor "balance" {:limit limit :skip start :sort {:user-id 1} :only {:user-id 1 :ts 1 :accounts 1}}))
 
 
-  
+(defn- get-records-lazy [start limit]
+  (let [stop (if (> limit 1000) 1000 limit)]
+    (take-while (fn [a] (not= a nil)) (mapcat (fn [start] (run-query start stop)) (range start limit 1000) )))) 
+
+
+(defn get-all [render]
+  (let [fns (render render-styles) data (mapcat (:filter fns) (partition-by :user-id (filter (fn [a] (not= a nil)) (map filter-point (get-records-lazy 0 300000)))))]
+    (merge-data data (:merge fns) (:post-merge fns))))
 
   
 
