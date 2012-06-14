@@ -44,17 +44,22 @@
 
 
 (defn- balances-to-deltas [points]
-  (log "btp")
-  ;(println (count points))
+  ;(log "btp")
+  ;(log (str "btp "  (count points)))
 
   
   (let [balances (map :balance points) start (now)
-      deltas (map #(- %2 %1) balances (rest balances))]
+      deltas (map (fn [a b]
+                    (cond 
+                      (nil? a) (log "a is nil")
+                      (nil? b) (log "b is nil")
+                      )
+                    (- b a)) balances (rest balances))]
     (let [x (cons 
       (first points) 
       (map (fn [orig diff] 
           (assoc orig :balance diff)) (rest points) deltas)) ]
-      (log (str "post btd map" (count points)))
+      ;(log (str "post btd map" (count points)))
                  x)))
 
 (defn- balances-to-percent-change [points]
@@ -105,9 +110,12 @@
 (defn- merge-data [data merge-fn post-merge-fn]
   ;(println "md")
   (log (count data))
-  (let [data (sort-by :ts data)]
-    (log "merge-data")
-    (reduce post-merge-fn nil (map merge-fn (partition-by :ts data)))))                
+  (let [data (sort-by :ts data)
+    l (log "merge-data")
+    re (reduce post-merge-fn nil (pmap merge-fn (partition-by :ts data))
+               )]
+    (log "end")
+    re))                
   
 (def render-styles {
   :total {:filter balances-to-deltas :merge merge-by-total :post-merge post-merge-by-total}
@@ -115,9 +123,9 @@
 
 
 
-(defn- run-query [start limit user-id]
+(defn- run-query [user-ids]
   (time (seq
-  (mongo/get-cursor "balance" {:where {:user-id user-id} :limit limit :skip start :sort {:user-id 1} :only {:user-id 1 :ts 1 :accounts 1}}))))
+  (mongo/get-cursor "filteredbalance" {:where {:user-id user-ids}  :sort {:user-id 1} :only {:user-id 1 :ts 1 :balance 1}}))))
 
 
 
@@ -138,13 +146,71 @@
 (defn get-using-user-ids [render]
   (let [fns (render render-styles)
         user-ids (mongo/get-distinct "balance" "user-id")
-        data (mapcat (fn [pts] 
-                  ((:filter fns) (filter (fn [a] (not= a nil)) (map filter-point pts))))
-                    
-                  (map (fn [user-id] (run-query 0 400 user-id)) user-ids))]
+        total-users (count user-ids)
+        
+        data (mapcat (fn [p] 
+                       (println "wtf " (count p)) ((:filter fns) p)) (partition-by :user-id (filter (fn [a] (not= a nil) ) (map filter-point (map (fn [start]
+               (let [end (if (> (+ start 20) total-users) total-users (+ start 20))
+                     data (run-query (subvec user-ids start end))]
+                 ;(println "start " start " end " end " count " (count data))
+                 data)) (range 0 total-users 20))))))]  
+
+          (println "total points " (count data))
     (merge-data data (:merge fns) (:post-merge fns))))
 
 
-  
 
 
+(defn get-using-user-ids [render]
+  (let [fns (render render-styles)
+        user-ids (mongo/get-distinct "balance" "user-id")
+        total-users (count user-ids)
+
+        data (mapcat (fn [pts] 
+                  (mapcat (:filter fns) (partition-by :user-id (filter (fn [a] (not= (:balance a) nil)) pts))))
+                    
+                  (map (fn [start]
+               (let [end (if (> (+ start 20) total-users) total-users (+ start 20))
+                     data (run-query {"$in" (subvec user-ids start end)})]
+                 ;(println "start " start " end " end " count " (count data))
+                 data)) (range 0 total-users 20)))]
+    (merge-data data (:merge fns) (:post-merge fns))))
+
+
+(defn get-using-user-ids-batch [render]
+  (let [fns (render render-styles)
+        user-ids (mongo/get-distinct "balance" "user-id")
+        total-users (count user-ids)
+        data (apply concat (pmap (fn [pts]
+                  (apply concat (pmap (:filter fns) (partition-by :user-id pts))))
+                  (pmap (fn [start]
+               (let [end (if (> (+ start 40) total-users) total-users (+ start 40))
+                     ids (subvec user-ids start end)
+                     data (run-query  {"$in" ids})]
+                    (log ids)
+                 data)) (range 0 total-users 40))))]
+    (merge-data data (:merge fns) (:post-merge fns))))
+
+
+
+
+(defn get-using-user-ids [render]
+  (let [fns (render render-styles)
+        user-ids (mongo/get-distinct "balance" "user-id")
+        data (mapcat (fn [pts] ((:filter fns) (filter (fn [a] 
+                                                        (if (nil? (:balance a)) (log a))
+                                                        true)
+                                                      ;(not= (:balance a) nil)
+                                                       pts)))
+                    
+                  (map (fn [user-id] (run-query user-id)) user-ids))]
+    (merge-data data (:merge fns) (:post-merge fns))))
+
+
+(defn filter-to-mongo []
+  (let [user-ids (mongo/get-distinct "balance" "user-id")]
+        (map (fn [pts] 
+                  (mongo/insert :filteredbalance (filter (fn [a] (not= a nil)) (map filter-point pts))))
+                    
+                  (map (fn [user-id] (run-query user-id)) user-ids))
+    ))

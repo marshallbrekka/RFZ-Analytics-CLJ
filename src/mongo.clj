@@ -1,6 +1,6 @@
 (ns mongo
   (:use 
-    [somnium.congomongo :as cm :only [make-connection set-connection! fetch distinct-values]]
+    [somnium.congomongo :as cm :only [make-connection set-connection! fetch distinct-values mass-insert!]]
     [somnium.congomongo.coerce :as cmc :only [coerce]])
   (:require 
     ;[app.config :as config]
@@ -29,7 +29,10 @@
   (.hasNext cursor))
 
 (defn get-next [cursor]
-  (somnium.congomongo.coerce/coerce (.next cursor) [:mongo :clojure]))
+  (cmc/coerce (.next cursor) [:mongo :clojure]))
+
+(defn insert [collection batch]
+  (mass-insert! collection batch))
 
 
 
