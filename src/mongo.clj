@@ -11,18 +11,18 @@
 
 (defn connect
   ([db host port]
-   (def conn (make-connection db :host host :port port))
-   (set-connection! conn))
+   (make-connection db :host host :port port))
   ([db]
    (connect db "127.0.0.1" 27017)))
 
  
-(defn get-cursor [collection options]
-  ;(assoc options :as :mongo)
-  (apply fetch collection (mapcat identity options)))
+(defn run-query [conn collection options]
+  (cm/with-mongo conn
+      (apply fetch collection (mapcat identity options))))
 
-(defn get-distinct [collection dis-key]
-  (distinct-values collection dis-key))
+(defn get-distinct [conn collection dis-key]
+  (cm/with-mongo conn
+      (distinct-values collection dis-key)))
 
 
 (defn has-next? [cursor]
@@ -31,9 +31,9 @@
 (defn get-next [cursor]
   (cmc/coerce (.next cursor) [:mongo :clojure]))
 
-(defn insert [collection batch]
-  (mass-insert! collection batch))
-
+(defn insert [conn collection batch]
+  (cm/with-mongo conn
+      (mass-insert! collection batch)))
 
 
 

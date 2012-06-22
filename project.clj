@@ -27,7 +27,9 @@
                            [org.slf4j/slf4j-log4j12 "1.6.4"]
                            [org.clojure/data.csv "0.1.2"]
                            [log4j/apache-log4j-extras "1.1"]
-                           
+                           [clj-serializer "0.1.3"]
+                           [deep-freeze "1.2.2-SNAPSHOT"]
+                           [cheshire "4.0.0"]
                            
                            
                            ]

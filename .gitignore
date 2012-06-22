@@ -8,3 +8,5 @@ target
 *.swp
 .DS_Store
 .class
+.*
+data*.json

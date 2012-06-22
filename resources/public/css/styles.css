@@ -1,9 +1,30 @@
 body {
-				text-align :center;
-			}
-			#container {
-				text-align:left;
-			}
+  text-align :center;
+}
 #container {
-	height: 500px; min-width: 500px";
-	}
+  text-align:left;
+}
+
+#loader {
+  display:none;
+}
+
+#user_ids {
+ display:block;
+}
+
+#desc {
+	width:600px;
+	text-align:left;
+	margin:0 auto;
+}
+
+
+form {
+  text-align:left;
+  width:600px;
+  margin:0 auto;
+  }
+#container {
+  height: 500px; min-width: 500px";
+}
