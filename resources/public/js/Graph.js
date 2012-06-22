@@ -1,44 +1,46 @@
 function run() {
-    
-
-  $("#data-form").submit(function() {
-    var idSet = $('#user-set').val();
-    var type = $('input:radio[name=render_type]:checked').val();
-    var offset = $("#offset").val();
-    getData({"id-set" : idSet, render_type : type, offset : offset});
-    $("#loader").show();
-    return false;
-  });
+    var theForm = new form($("#data-form"), function(data) {
+	getData(data);
+	$("#loader").show();
+  }, sets, offsets, renderModes);
 }
 
 
-function form(submitCallback, sets, offsets, renderModes) {
+function form(container, submitCallback, sets, offsets, renderModes) {
+    var self = this;
     this.sets = sets;
     this.offsets = offsets;
     this.renderModes = renderModes;
-    this.container = $('<div class="options"/>');
+    this.plotCount = 0;
+    this.container = container;
     this.form = $('<form/>');
     this.addBtn = $('<a href="#add">Add Plot</a>');
+    this.addBtn.click(function() {
+	self.addPlotOptions();
+    });
     this.submit = $('<input type="submit" value="Submit"/>');
-    this.form.append(addBtn);
-    this.form.append(submit);
+    this.container.append(this.form);
+    this.form.append(this.addBtn);
+    this.form.append(this.submit);
+    console.log(container);
     this.addPlotOptions();
     this.form.submit(function() {
-	submitCallback(this._getData());
+	submitCallback(self._getData());
 	return false;
-    }
+    });
 }
 
-form._getData = function() {
+form.prototype._getData = function() {
     var data = {};
-    form.find('input, select').each(function(index, elem) {
-	data[elem.getAttribute('name')] = elem.val();
-    }
+    this.form.find('input, select').each(function(index, elem) {
+	elem = $(elem);
+	data[elem.attr('name')] = elem.val();
+    });
     return data;
 }
 
-form.addPlotOptions = function() {
-    var index = plotOptions.length;
+form.prototype.addPlotOptions = function() {
+    var index = this.plotCount++;
     var items = [
 	{
 	    name : "set",
@@ -55,18 +57,18 @@ form.addPlotOptions = function() {
     container.append(removeBtn);
     removeBtn.click(function() {
 	$("#options-" + index).remove();
-    }
+    });
     for (var i = 0; i < items.length; i++) {
-	var input = this._makeSelectionList(items[i].name, items[i].options);
+	var input = this._makeSelectionList(index, items[i].name, items[i].options);
 	container.append(input);
     }
     container.insertBefore(this.addBtn);
 }	
-    
+   
 
-form._makeSelectionList = function(index, name, options) {
+form.prototype._makeSelectionList = function(index, name, options) {
     var select = $('<select type="select" name="plots[' + index + '][' + name + ']"></select>');
-    for (var i = 0; i < options; i++) {
+    for (var i = 0; i < options.length; i++) {
 	select.append('<option value="' + options[i].value + '">' + options[i].label + '</option>');
     }
     return select;
@@ -76,7 +78,7 @@ form._makeSelectionList = function(index, name, options) {
  
 function getData(options) {
     var data = new api({
-        url:'http://' + location.hostname + ':' + location.port + '/api?render_type=average'    });
+        url:'http://' + location.hostname + ':' + location.port + '/api?'});
     data.get(options, function(data){
         
         console.log(data.length);
@@ -89,6 +91,19 @@ function getData(options) {
     
 
 function createGraph(container, data) {
+    var series = [];
+    for (var i = 0; i < data.length; i++) {
+	var temp = data[i];
+	series.push({
+            data : temp,
+            pointStart: new Date(temp[0][0]),
+            pointInterval: 24 * 3600,
+            tooltip: {
+                valueDecimals: 2
+            }
+        });
+    }
+
     window.chart = new Highcharts.StockChart({
         chart : {
             renderTo : container
@@ -102,17 +117,9 @@ function createGraph(container, data) {
             text : 'Total User Balance'
         },
 
-        series : [{
-
-            data : data,
-            pointStart: new Date(data[0][0]),
-            pointInterval: 24 * 3600,
-            tooltip: {
-                valueDecimals: 2
-            }
-        }]
+        series : series
     });
 
 
 }
-   
+

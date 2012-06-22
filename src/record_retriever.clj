@@ -23,8 +23,7 @@
 (defn get-sets [] sets/sets)
 (defn get-offsets [] offset/offsets)
 
-
-(defn get-records [ids render offset]
+(defn get-records-for-plot [ids render offset]
   (let [fns (render processing/graph-types) 
         ;l (log ids)
         ids (:ids ((keyword ids) sets/sets))
@@ -41,6 +40,10 @@
     (internal/merge-data data (:merge fns) (:post-merge fns))))
 
 
+
+(defn get-records [plots]
+  (map (fn [[k v]]
+         (get-records-for-plot (keyword (:set v)) (keyword (:render v)) (keyword (:offset v)))) plots))
 
 
 

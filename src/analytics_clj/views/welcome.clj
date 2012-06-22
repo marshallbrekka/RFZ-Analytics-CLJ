@@ -2,6 +2,7 @@
   (:require [analytics-clj.views.common :as common]
             [noir.response :as resp]
             [record-retriever :as rr]
+            [cheshire.core :as json]
             [record-retriever.disc :as rrd])
   (:use [noir.core] [hiccup.core] ))
 
@@ -30,28 +31,19 @@
      [:h2 "Data Aggregation"]  
      [:p "Total Balances: This method displays the sum of all users balances per day."]
      [:p "Percentage Change: This method sums the percentage of change for each users balance per day."]]
-      [:form#data-form
-      ;[:label {:for "user_ids"} "User Ids to render (blank renders all)"]
-      ;[:input#user_ids {:type "text" :name "user_ids"}]
-      [:label {:for "user-set"} "User Set "]
-      [:br]
-      [:select#user-set {:name "set"}
-       (map (fn [[k v]] 
-            [:option {:value k} (:name v)]) (rr/get-sets))]
-      [:select#offset {:name "offset"}
-       (map (fn [offset] [:option {:value (:key offset)} (:label offset)]) (rr/get-offsets))]
-      [:br]
-      [:input {:type "radio" :name "render_type" :value "total"} "Total Balances"]
-      [:br]
-      [:input {:type "radio" :name "render_type" :value "average"} "Percentage Change"]
-      [:br]
-      [:input {:type "submit"}]]
+     [:div#data-form]
      [:img#loader {:src "img/ajax.gif"}]
      [:div#container]
-     [:script "run(); //"]]))
+     [:script (str "var offsets = " 
+                   (json/generate-string 
+                     (map (fn [item] {:value (:key item) :label (:label item)}) (rr/get-offsets)))
+                   "; var sets = " 
+                   (json/generate-string
+                     (map (fn [[k v]] {:value (:id v) :label (:name v)}) (rr/get-sets)))
+                   "; var renderModes = [{value : 'total', label : 'Total Balances'}, {value : 'average', label : 'Percentage Change'}]; run(); //")]]))
 
-(defpage [:get "/api"] {:keys [offset id-set render_type]}
-  (resp/json (record-retriever/get-records id-set (keyword render_type) offset)))
+(defpage [:get "/api"] {:keys [plots]}
+  (resp/json (record-retriever/get-records plots)))
 
 (defpage [:get "/run"] []
   (resp/json (rrd/serialize-from-mongo)))
