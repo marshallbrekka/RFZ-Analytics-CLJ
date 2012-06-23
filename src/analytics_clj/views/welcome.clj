@@ -38,13 +38,12 @@
                    (json/generate-string 
                      (map (fn [item] {:value (:key item) :label (:label item)}) (rr/get-offsets)))
                    "; var sets = " 
-                   (json/generate-string
-                     (map (fn [[k v]] {:value (:id v) :label (:name v)}) (rr/get-sets)))
+                   (json/generate-string (rr/get-sets))
                    "; var renderModes = [{value : 'total', label : 'Total Balances'}, {value : 'average', label : 'Percentage Change'}]; run(); //")]]))
 
 (defpage [:get "/api"] {:keys [plots]}
   (resp/json (record-retriever/get-records plots)))
 
 (defpage [:get "/run"] []
-  (resp/json (rrd/serialize-from-mongo)))
+  (resp/json (rrd/serialize-from-mongo true)))
      

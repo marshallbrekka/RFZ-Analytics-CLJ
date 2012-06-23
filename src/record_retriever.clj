@@ -20,13 +20,14 @@
 
 
 
-(defn get-sets [] sets/sets)
+(defn get-sets [] (sets/get-routes))
 (defn get-offsets [] offset/offsets)
 
-(defn get-records-for-plot [ids render offset]
+(defn get-records-for-plot [route setoptions render offset]
   (let [fns (render processing/graph-types) 
         ;l (log ids)
-        ids (:ids ((keyword ids) sets/sets))
+        ids (sets/get-subset route setoptions)
+        ;l (log ids)
         id-keywords (sets/ids-to-keywords ids)
         offsets (offset/get-offsets offset ids)
         ;l (log offsets)
@@ -43,7 +44,7 @@
 
 (defn get-records [plots]
   (map (fn [[k v]]
-         (get-records-for-plot (keyword (:set v)) (keyword (:render v)) (keyword (:offset v)))) plots))
+         (get-records-for-plot (:set v) (:set-options v) (keyword (:render v)) (keyword (:offset v)))) plots))
 
 
 

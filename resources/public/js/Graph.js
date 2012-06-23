@@ -60,10 +60,48 @@ form.prototype.addPlotOptions = function() {
     });
     for (var i = 0; i < items.length; i++) {
 	var input = this._makeSelectionList(index, items[i].name, items[i].options);
+	if(items[i].name == "set") {
+	    input = this._makeSetSelection(index, items[i].options, input);
+	}
 	container.append(input);
     }
     container.insertBefore(this.addBtn);
-}	
+}
+
+
+form.prototype._makeSetSelection = function(index, sets, elem) {
+    var container = $('<div/>');
+    this._changeSetSelectionOptions(index, sets, elem, container);
+    var self = this;
+    elem.change(function() {
+	self._changeSetSelectionOptions(index, sets, elem, container);
+    });
+    return container;
+}
+    
+
+form.prototype._changeSetSelectionOptions = function(index, sets, elem, container) {
+    var val = elem.val();
+    
+    container.children().detach();
+    container.append(elem);
+    var theSet = null;
+    for (var i = 0; i < sets.length; i++) {
+	if (val == sets[i].value) {
+	    theSet = sets[i];
+	    break;
+	}
+    }
+
+    if (null != theSet.options) {
+	var temp = theSet.options;
+	for (var key in temp) {
+	    if (temp.hasOwnProperty(key)) {
+		container.append('<label>' + key + '</label><input type="text" name="plots[' + index + '][set-options][' + key + ']" />');
+	    }
+	}
+    }
+}
    
 
 form.prototype._makeSelectionList = function(index, name, options) {

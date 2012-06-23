@@ -11,6 +11,8 @@
 (def mongo-collection "snapshot-balances")
 (def conn (mongo/connect "mydb"))
 (def file-name "data2.json")
+(def file-name-seperate "data-seperate.json")
+
 (def user-data nil)
 
 (defn filter-point [point] 
@@ -70,16 +72,26 @@
   {(keyword (str (:user-id (first pts)))) 
   (vec (calc-totals-from-deltas (merge-accounts (conj-account-timelines (map calc-deltas (partition-by :account-id filtered))))))}))
 
+(defn prep-user-points-seperate-accounts [pts]
+  (log (str "# of points " (count pts) ". for user " (:user-id (first pts))))
+  (let [filtered (filter internal/filter-nil (map filter-point pts))]
+  {(keyword (str (:user-id (first pts)))) 
+  (vec (map calc-totals-from-deltas (map merge-accounts (map calc-deltas (partition-by :account-id filtered)))))}))
 
 
 
 
 
-(defn serialize-from-mongo []
-  (let [user-ids (mongo/get-distinct conn mongo-collection "user-id")
+
+
+(defn serialize-from-mongo [flat-accounts?]
+  (println flat-accounts?)
+  (let [prep-fn (if flat-accounts? prep-user-points prep-user-points-seperate-accounts)
+        file (if flat-accounts? file-name file-name-seperate)
+        user-ids [2598] ;(mongo/get-distinct conn mongo-collection "user-id")
         total-users (count user-ids)
         l (log (str "total users " total-users))   
-        f (file-io/open-write file-name)]
+        f (file-io/open-write file)]
         (doseq [x (map (fn [uid] ;(log uid)
                                       (run-query uid {:account-id 1}))
                                     user-ids)]
