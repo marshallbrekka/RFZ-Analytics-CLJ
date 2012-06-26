@@ -11,22 +11,22 @@
 
 (defn merge-by-total [points]
   (reduce (fn [a b]
-      [(first b) (+ (last b) (last a))]) [0 0] points))
+      [(first b) (+ (int (* 100 (last b))) (last a))]) [0 0] points))
 
 (defn post-merge-by-total [final point]
   (if (nil? point)
     (println "point is nil"))
   (let [fin (if (nil? final) [] final)
-        prev-bal (if (nil? final) 0 (last (last final)))]
-    (conj fin [(first point) (+ prev-bal (double (/ (Math/round (float (* (last point) 100))) 100)))])))
+        prev-bal (if (nil? final) 0 (* 100 (last (last final))))]
+    (conj fin [(first point) (/ (+ prev-bal (last point)) 100)])))
 
 (defn balances-to-percent-change [points]
   (if (empty? points)
     points
-  (let [average (/ 
-                  (reduce + 
+  (let [average (/ (reduce + 
                           (map last points)) 
                   (count points))
+        l (println "average " average)
         update-fn (if (= (double average) 0.0) (fn [a] 0) (fn [a] (/ a average)))]
     (map (fn [point] (update-in point [1] update-fn)) points))))
 

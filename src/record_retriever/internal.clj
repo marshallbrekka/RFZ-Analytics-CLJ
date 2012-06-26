@@ -46,20 +46,25 @@
 (defn merge-data [data merge-fn post-merge-fn]
   (log (str "merge start " (count data)))
   (let [data (sort-by first data)
+        l (log "sorted")
         data (filter (fn [pt] 
                            (if (nil? pt)
                              (println "found nil in filter"))
                              (not (nil? pt))) data)
 
 
+    
     l (log "sort complete, merging")
-    ;l (log (take 10 data))
-    merged (pmap merge-fn (partition-by (fn [a] 
+        merged (pmap merge-fn (partition-by (fn [a] 
           (if (nil? a)
             (println "partition by found nil item")
             (if (nil? (first a))
               (println "partition by first found nil")))
                                   (first a)) data))
+    l (log "merged")
+    l (log (take 10 merged))
+
+    ;l (log merged)
     
     l (log "merged complete, starting post-merge")
     ;l (log (take 10 merged))
