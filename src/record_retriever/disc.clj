@@ -2,6 +2,7 @@
   (:require
     [file-io]
     [record-retriever.internal :as internal]
+    [record-retriever.offset :as offset]
     [mongo]))
 
 
@@ -14,6 +15,7 @@
 (def file-name-seperate "data-seperate.json")
 
 (def user-data nil)
+(def user-data-flat nil)
 
 (defn filter-point [point] 
     (when (and (:ts point) (not= (:ts point) 0))
@@ -25,9 +27,9 @@
 (defn run-query [user-ids sort-using]
   ;(time (seq
   (mongo/run-query conn mongo-collection 
-                   {:where {:user-id user-ids :active true :itemType {"$in" ["credits" "loans"]} }
+                   {:where {:user-id user-ids :active true :itemType {"$in" ["credits"]}} ;"loans"]} }
                     :sort sort-using 
-                    :only {:user-id 1 :ts 1 :balance 1 :account-id 1}}))
+                    :only {:user-id 1 :ts 1 :balance 1 :account-id 1 :itemType 1}}))
 
 
 
@@ -40,7 +42,6 @@
 (defn calc-deltas 
   "takes a seq of points for a single account, not sorted by ts"
   [pts]
-  
      (let [sorted (sort-by :ts pts)
           filtered (get-day-balances sorted)]
       (if (>= 1 (count filtered))
@@ -62,24 +63,56 @@
   (let [sorted (sort-by :ts-day pts)]
     (map merge-day (partition-by :ts-day sorted)))) 
 
+
 (defn calc-totals-from-deltas [deltas]
   (reduce (fn [a b] (conj a [(first b) (+ (last (last a)) (last b))])) [(first deltas)] (rest deltas)))
 
 
-(defn prep-user-points [pts]
-  (log (str "# of points " (count pts) ". for user " (:user-id (first pts))))
+
+(defn get-first-day-from-accounts [accounts]
+  (first (sort (map #(:ts-day (first %)) accounts))))
+
+
+(defn extend-to-start-date [date account-pts]
+  (map (fn [account]
+    (if (> (:ts-day (first account)) date)
+      (cons (update-in (first account) [:ts-day] (fn [a] date)) (cons (update-in (first account) [:balance] (fn [a] 0)) (rest account)))
+      account)) account-pts))
+
+(defn match-start-date-on-accounts [accounts offsets]
+  ;(log accounts)
+  ;(-> (get-first-day-from-accounts accounts) 
+  (extend-to-start-date (internal/get-day (offset/get-offset offsets (keyword (str (:user-id (first (first accounts))))))) accounts ))
+
+
+
+
+(defn prep-user-points [pts offsets]
+  ;(log (str "# of points " (count pts) ". for user " (:user-id (first pts))))
   (let [filtered (filter internal/filter-nil (map filter-point pts))]
-  {(keyword (str (:user-id (first pts)))) 
-  (vec (calc-totals-from-deltas (merge-accounts (conj-account-timelines (map calc-deltas (partition-by :account-id filtered))))))}))
-
-(defn prep-user-points-seperate-accounts [pts]
-  (log (str "# of points " (count pts) ". for user " (:user-id (first pts))))
-  (let [filtered (filter internal/filter-nil (map filter-point pts))]
-  {(keyword (str (:user-id (first pts)))) 
-  (vec (map calc-totals-from-deltas (map merge-accounts (map calc-deltas (partition-by :account-id filtered)))))}))
-
+  {(keyword (str (:user-id (first pts)))) [{:type "all" :points
+    (->> (match-start-date-on-accounts (map calc-deltas (partition-by :account-id filtered)) offsets)
+         (conj-account-timelines)
+         (merge-accounts)
+         (calc-totals-from-deltas)
+         (vec))}]}))
+   ;(vec (calc-totals-from-deltas (merge-accounts (conj-account-timelines (map calc-deltas (partition-by :account-id filtered))))))}))
 
 
+
+(defn prep-user-points-seperate-accounts [pts offsets]
+  ;(log (str "# of points " (count pts) ". for user " (:user-id (first pts))))
+  (let [filtered (filter internal/filter-nil (map filter-point pts))
+        partitioned (partition-by :account-id filtered)
+        deltas (match-start-date-on-accounts (map calc-deltas partitioned) offsets)
+        ;l (log deltas)
+        merged-accounts (map merge-accounts deltas)
+        ;l (log merged-accounts)
+        totals-from-deltas (map calc-totals-from-deltas merged-accounts)
+        ;l (log totals-from-deltas)
+        ]
+  {(keyword (str (:user-id (first pts))))
+  (map (fn [fullset totals] {:type (:itemType (first fullset)) :points totals}) deltas (vec totals-from-deltas))}))
 
 
 
@@ -88,14 +121,16 @@
   (println flat-accounts?)
   (let [prep-fn (if flat-accounts? prep-user-points prep-user-points-seperate-accounts)
         file (if flat-accounts? file-name file-name-seperate)
-        user-ids [2598] ;(mongo/get-distinct conn mongo-collection "user-id")
+        user-ids (mongo/get-distinct conn mongo-collection "user-id")
+        offsets (offset/get-offsets "date-joined" user-ids)
+
         total-users (count user-ids)
         l (log (str "total users " total-users))   
         f (file-io/open-write file)]
-        (doseq [x (map (fn [uid] ;(log uid)
+        (doseq [x (map (fn [uid] (log uid)
                                       (run-query uid {:account-id 1}))
                                     user-ids)]
-                           (file-io/write-line f (prep-user-points x)))
+                           (file-io/write-line f (prep-fn x offsets)))
         ;(log data)    
         ;(log (str "rows to write " (count data)))
         ;(log (count (last (first data))))
@@ -106,19 +141,22 @@
 
 
 
-(defn deserialize-from-disc []
-  (if (nil? user-data)
-    (let [ud 
-      (do
-        (log "start")
-        (let [f (file-io/open file-name)
-         data (file-io/read-lines f)]
-      (log "finished")
-      (log (count data))
-      data))]
-     (def user-data ud)
-     ud)
-   user-data)) 
+(defn deserialize-from-disc [flat-file?]
+  (let [data-obj (if flat-file? user-data-flat user-data)
+        ud (if (nil? data-obj)
+            (do
+            (log "start")
+            (let [file (if flat-file? file-name file-name-seperate)
+                  f (file-io/open file)
+                  data (file-io/read-lines f)]
+              (log "finished")
+              (log (count data))
+              (log (type data))
+            data)) data-obj)]
+      (if flat-file?
+      (def user-data-flat ud)
+      (def user-data ud))
+    ud)) 
       
 
 

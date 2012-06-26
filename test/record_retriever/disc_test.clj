@@ -46,23 +46,61 @@
       (is (= (disc/calc-totals-from-deltas input) output)))))
           
 
-
-
-
-(deftest get-balance
-  (testing "get-balance"
-    (let [input [{:ts 99 :ts-day 0 :account-id 0 :balance 20} {:ts 100 :ts-day 0 :account-id 0 :balance 18} {:ts 0 :ts-day 0 :account-id 1 :balance 2}]
-          output [0 20.00]]
-      (is (= (disc/get-balance input) output)))))
+(deftest extend-to-start-date
+  (testing "extend-to-start-date"
+    (let [input [[{:ts-day 10  :balance 10}] 
+                 [{:ts-day 20 :balance 13}]
+                 [{:ts-day 0 :balance 3}
+                  {:ts-day 4 :balance 5}]]
+          start-date 0
+          output [[{:ts-day 0  :balance 10}
+                   {:ts-day 10  :balance 0}] 
+                  [{:ts-day 0 :balance 13}
+                   {:ts-day 20 :balance 0}]
+                  [{:ts-day 0 :balance 3}
+                   {:ts-day 4 :balance 5}]]]
+      (is (= (disc/extend-to-start-date start-date input) output)))))
+      
+(deftest get-first-day-from-accounts
+  (testing "get-first-day-from-accounts"
+    (let [input [[{:ts-day 10  :balance 10}] 
+                 [{:ts-day 20 :balance 13}]
+                 [{:ts-day 0 :balance 3}
+                  {:ts-day 4 :balance 5}]]
+          output 0]
+      (is (= (disc/get-first-day-from-accounts input)) output))))
 
 
 (deftest prep-user-points
   (testing "prep-user-points"
-    (let [input [{:user-id 0 :account-id 0 :ts 1326603842001 :balance 20} 
-                 {:user-id 0 :account-id 0 :ts 1326603842000 :balance 100} 
-                 {:user-id 0 :account-id 0 :ts 1339358018251 :balance 40}
-                 {:user-id 0 :account-id 1 :ts 1326603842000 :balance 20} 
-                 {:user-id 0 :account-id 1 :ts 1339391042000 :balance 10}]
-          output {:0 [[1326585600000 40.00] [1339286400000 60.0] [1339372800000 50.00]]}]
-      (is (= (disc/prep-user-points input) output)))))
+    (let [input [{:user-id 0 :account-id 0 :ts 1326603842001 :balance 20 :itemType "credits"} 
+                 {:user-id 0 :account-id 0 :ts 1326603842000 :balance 100 :itemType "credits"} 
+                 {:user-id 0 :account-id 0 :ts 1339358018251 :balance 40 :itemType "credits"}
+                 {:user-id 0 :account-id 1 :ts 1326603842000 :balance 20 :itemType "credits"} 
+                 {:user-id 0 :account-id 1 :ts 1339391042000 :balance 10 :itemType "credits"}]
+          output {:0 [{:type "all" :points [[1326585600000 40.00] [1339286400000 60.0] [1339372800000 50.00]]}]}
+          input2 [{:user-id 0 :account-id 0 :ts 1326603842001 :balance 20 :itemType "credits"} 
+                 {:user-id 0 :account-id 0 :ts 1326603842000 :balance 100 :itemType "credits"} 
+                 {:user-id 0 :account-id 0 :ts 1339358018251 :balance 40 :itemType "credits"}
+                 {:user-id 0 :account-id 1 :ts 1339391042000 :balance 10 :itemType "credits"}]
+          output2 {:0 [{:type "all" :points [[1326585600000 30.00] [1339286400000 50.0] [1339372800000 50.00]]}]}]
+        (is (= (disc/prep-user-points input) output))
+        (is (= (disc/prep-user-points input2) output2)))))
+      
+
+(deftest prep-user-points-seperate-accounts
+  (testing "prep-user-points-seperate-accounts"
+    (let [input [{:user-id 0 :account-id 0 :ts 1326603842001 :balance 20 :itemType "credits"} 
+                 {:user-id 0 :account-id 0 :ts 1326603842000 :balance 100 :itemType "credits"} 
+                 {:user-id 0 :account-id 0 :ts 1339358018251 :balance 40 :itemType "credits"}
+                 {:user-id 0 :account-id 1 :ts 1326603842000 :balance 20 :itemType "credits"} 
+                 {:user-id 0 :account-id 1 :ts 1339391042000 :balance 10 :itemType "credits"}]
+          output {:0 [{:type "credits" :points [[1326585600000 20.00] [1339286400000 40.0]]} {:type "credits" :points [[1326585600000 20.00] [1339372800000 10.00]]}]}
+          input2 [{:user-id 0 :account-id 0 :ts 1326603842000 :balance 10 :itemType "credits"}
+                  {:user-id 0 :account-id 1 :ts 1339391042000 :balance 20 :itemType "credits"}]
+          output2 {:0 [{:type "credits" :points [[1326585600000 10.00]]} {:type "credits" :points [[1326585600000 20.00] [1339372800000 20.00]]}]}]
+
+      (is (= (disc/prep-user-points-seperate-accounts input) output))
+      (is (= (disc/prep-user-points-seperate-accounts input2) output2)))))
+
 

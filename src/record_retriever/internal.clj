@@ -29,15 +29,19 @@
 
 
 
-(defn get-subset [user-ids data]
+(defn get-subset 
+  ([user-ids data filter-fn flat?]
   ;(log (str (type user-ids) user-ids))
-  ;(log (type data))
+  ;(log (str "uids " (count user-ids) " " (count data)))
   (if (empty? user-ids)
     data
     (reduce (fn [new-map user-id] 
               (if (contains? data user-id)
-                  (merge new-map {user-id (user-id data)}) 
+                  (merge new-map {user-id (let [filtered (filter filter-fn (user-id data))]
+                                            ;(log filtered)
+                                  (if flat? (:points (first filtered)) (map :points filtered)))}) 
                   new-map)) {} user-ids)))
+  ([user-ids data] (get-subset user-ids data (fn [a] true) true)))
 
 (defn merge-data [data merge-fn post-merge-fn]
   (log (str "merge start " (count data)))
