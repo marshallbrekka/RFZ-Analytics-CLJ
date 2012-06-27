@@ -152,7 +152,7 @@ function createGraph(container, data) {
         },
 
         title : {
-            text : 'Total User Balance'
+            text : 'User Balance Graphs'
         },
 
         series : series

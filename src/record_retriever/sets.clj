@@ -18,14 +18,18 @@
 (def schema (update-in (create-schema-keys (json/parse-string (:body (client/get (str schema-url "/json"))))) [:endpoints] 
                                           (fn [eps] (filter (fn [ep] (not= "/json" (last (:route ep)))) eps))))
 (defn get-routes []
-  (map (fn [ept] {:value (last (:route ept)) :label (:info ept) :options (:in ept)}) (:endpoints schema)))
+  (conj (map (fn [ept] {:value (last (:route ept)) :label (:info ept) :options (:in ept)}) (:endpoints schema)) {:value "all-users" :label "Get All Users" :options []}))
 
 
 (defn get-subset [route params]
+    
+    (let [params (if (= route "all-users" ) {:end "1375228800000" :start "0"} params)
+          route (if (= route "all-users") "/subset/date-joined" route)]
+
   (println route params)
   (let [params (apply merge (map (fn [[k v]] {k (long (Float/parseFloat v))}) params))
         ids (json/parse-string (:body (client/post (str schema-url route) {:headers {"Content-Type" "application/json" "Cookie" "disable-csrf=true;"} :body (json/generate-string params)})))]
-    (map (fn [id] (get id "id")) ids)))
+    (map (fn [id] (get id "id")) ids))))
     
 (defn ids-to-keywords [ids]
   (map (fn [a] (keyword (str (int a)))) ids))

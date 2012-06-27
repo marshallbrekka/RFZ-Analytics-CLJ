@@ -1,8 +1,6 @@
 (ns record-retriever.processing)
 
 
-
-
 (defn balances-to-deltas [points]
   (let [deltas (map (fn [[a-ts a-balance] [b-ts b-balance]]
                     [b-ts (- b-balance a-balance)]) points (rest points))]
@@ -26,9 +24,10 @@
   (let [average (/ (reduce + 
                           (map last points)) 
                   (count points))
-        l (println "average " average)
-        update-fn (if (= (double average) 0.0) (fn [a] 0) (fn [a] (/ a average)))]
-    (map (fn [point] (update-in point [1] update-fn)) points))))
+        ;l (println "average " average)
+        update-fn (if (= (double average) 0.0) (fn [a] 0) (fn [a] (- (/ a average) 1)))]
+        ;deltas (balances-to-deltas points)]
+    (balances-to-deltas (map (fn [point] (update-in point [1] update-fn)) points)))))
 
 (defn merge-by-average [points]
   (let [sum  (reduce (fn [a b] (+ a (last b))) 0 points)]
@@ -36,9 +35,28 @@
    
 (defn post-merge-by-average [final point]
   (let [fin (if (nil? final) [] final)]
-      (conj fin [(first (:point point))  (/ (last (:point point)) (:count point))])))
+      (conj fin [(first (:point point))  (last (:point point)) ])))
+
+
+
+
+(defn balances-to-percentage-of-start [points]
+  ;(println "pre delta points " points)
+  (let [start (last (first points))
+        start (if (= 0.0 start) 1 start)]
+    (let [bal (balances-to-deltas (map (fn [[t b]] [t (/ b start)]) points))]
+      ;(println "post deltas " bal) 
+      bal)))
+
+(defn merge-by-start [points]
+  (reduce (fn [a b]
+      [(first b) (+ (* 100 (last b)) (last a))]) [0 0] points))
+
+
+
 
 (def graph-types {
   :total {:filter balances-to-deltas :merge merge-by-total :post-merge post-merge-by-total}
-  :average {:filter balances-to-percent-change :merge merge-by-average :post-merge post-merge-by-average}})
+  :average {:filter balances-to-percent-change :merge merge-by-total :post-merge post-merge-by-total}
+  :average-from-start {:filter balances-to-percentage-of-start :merge merge-by-start :post-merge post-merge-by-total}})
 

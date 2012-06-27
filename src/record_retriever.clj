@@ -27,7 +27,7 @@
 
 (defn get-records-for-plot [route setoptions render offset]
   (let [fns (render processing/graph-types) 
-        ids [2598];(sets/get-subset route setoptions)
+        ids (sets/get-subset route setoptions)
         id-keywords (sets/ids-to-keywords ids)
         offsets (offset/get-offsets offset ids)
         user-points (internal/get-subset id-keywords (disc/deserialize-from-disc true))
@@ -77,8 +77,9 @@
                   redat)) user-data)]
 
     (log "filter completed")
-    ;(log (count (first (rest data))))
-    ;(log (first (rest data)))
+    (log (count data))
+    (log (count (first data)))
+    (log (first data))
     data))
 
 
@@ -87,8 +88,10 @@
 (defn get-records [plots]
   (reduce (fn [a b] (apply conj a b)) [] (map (fn [[k v]]
          (if (= (:render v) "accounts")
-           (reduce (fn [a b] 
-                     (apply conj a b)) [] (get-records-for-plot-seperate (:set v) (:set-options v) (keyword (:render v)) (keyword (:offset v))))
+           (reduce (fn [a b]
+                    (if (empty? b)
+                     a
+                                         (apply conj a b))) [] (get-records-for-plot-seperate (:set v) (:set-options v) (keyword (:render v)) (keyword (:offset v))))
            [(get-records-for-plot (:set v) (:set-options v) (keyword (:render v)) (keyword (:offset v)))])) plots)))
 
 
