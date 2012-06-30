@@ -1,9 +1,9 @@
-(ns record-retriever.disc
+(ns analytics-clj.app.record-retriever.disc
   (:require
-    [file-io]
-    [record-retriever.internal :as internal]
-    [record-retriever.offset :as offset]
-    [mongo]))
+    [analytics-clj.app.file-io :as file-io]
+    [analytics-clj.app.record-retriever.internal :as internal]
+    [analytics-clj.app.record-retriever.offset :as offset]
+    [analytics-clj.app.mongo :as mongo]))
 
 
 (defn now [] (java.util.Date.))
@@ -30,11 +30,6 @@
                    {:where {:user-id user-ids :active true :itemType {"$in" ["credits"]}} ;"loans"]} }
                     :sort sort-using 
                     :only {:user-id 1 :ts 1 :balance 1 :account-id 1 :itemType 1}}))
-
-
-
-
-;;;;; new method for calculating deltas for accounts
 
 (defn get-day-balances [pts]
   (map (fn [logs] (last logs)) (partition-by :ts-day pts)))

@@ -1,9 +1,6 @@
-(ns record-retriever.sets
-  (:require [mongo]
-            [cheshire.core :as json]
+(ns analytics-clj.app.record-retriever.sets
+  (:require [cheshire.core :as json]
             [clj-http.client :as client]))
-(def sets-collection "usersets")
-(def conn (mongo/connect "analytics"))
 (def schema-url "https://beta.readyforzero.com/api/stat")
 
 (defn create-schema-keys [schema]

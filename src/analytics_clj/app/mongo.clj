@@ -1,4 +1,4 @@
-(ns mongo
+(ns analytics-clj.app.mongo
   (:use 
     [somnium.congomongo :as cm :only [make-connection set-connection! fetch distinct-values mass-insert!]]
     [somnium.congomongo.coerce :as cmc :only [coerce]])

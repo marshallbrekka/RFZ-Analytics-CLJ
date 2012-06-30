@@ -1,6 +1,7 @@
-(ns file-io 
+(ns analytics-clj.app.file-io 
   (:require [cheshire.core :as json])
   (:import (java.io BufferedReader FileReader BufferedWriter FileWriter)))
+(def directory (str (get (into {} (System/getenv)) "RFZ_ANALYTICS_FILES") "/"))
 
 (defn read-lines [file]
   (apply merge (pmap (fn [a] (json/parse-string a true)) (line-seq file))))
@@ -15,10 +16,10 @@
 
 
 (defn open [filename]
-  (BufferedReader. (FileReader. filename)))
+  (BufferedReader. (FileReader. (str directory filename))))
 
 (defn open-write [filename]
-  (BufferedWriter. (FileWriter. filename)))
+  (BufferedWriter. (FileWriter. (str directory filename))))
 
 (defn close [file]
   (println "closing file")

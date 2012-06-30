@@ -30,8 +30,10 @@
                            [clj-serializer "0.1.3"]
                            [deep-freeze "1.2.2-SNAPSHOT"]
                            [cheshire "4.0.0"]
-                           
-                           
+                           [clj-time "0.4.3"]
+                                                     
                            ]
+            :plugins [[lein-ring "0.7.1"]]
+            :ring {:handler analytics-clj.server/handler}
             :main analytics-clj.server)
 

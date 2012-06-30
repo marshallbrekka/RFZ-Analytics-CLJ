@@ -1,19 +1,10 @@
 (ns analytics-clj.views.welcome
   (:require [analytics-clj.views.common :as common]
             [noir.response :as resp]
-            [record-retriever :as rr]
+            [analytics-clj.app.record-retriever :as rr]
             [cheshire.core :as json]
-            [record-retriever.disc :as rrd])
+            [analytics-clj.app.record-retriever.disc :as rrd])
   (:use [noir.core] [hiccup.core] ))
-
-(defpage "/welcome" []
-         (common/layout
-           [:p "Welcome to analytics-clj"]))
-
- (defpage "/hello" [] "hello")
-
-
-
 
 (defpage "/" []
   (html
@@ -21,9 +12,12 @@
      [:title "ReadyForZero Datalytics (alpha)"]
      [:script {:src "js/plugins/jquery-1.7.2.min.js"}]
      [:script {:src "js/plugins/highstock.js"}]
+     [:script {:src "js/plugins/jquery-ui-1.8.21.custom.min.js"}]
+     [:script {:src "js/plugins/jquery.dform-1.0.0.min.js"}]
      [:script {:src "js/api.js"}]
      [:script {:src "js/Graph.js"}]
-     [:link {:href "css/styles.css" :rel "stylesheet" :type "text/css"}]]
+     [:link {:href "css/styles.css" :rel "stylesheet" :type "text/css"}]
+     [:link {:href "css/smoothness/jquery-ui-1.8.21.custom.css" :rel "stylesheet" :type "text/css"}]]
     [:body 
      [:div#desc
      [:h1 "ReadyForZero Datalytics (alpha)"]
@@ -54,8 +48,11 @@
                    {value : 'accounts', label : 'Accounts (Debugging)'}]; run(); //")]]))
 
 (defpage [:get "/api"] {:keys [plots]}
-  (resp/json (record-retriever/get-records plots)))
+  (resp/json (rr/get-records plots)))
 
 (defpage [:get "/run"] []
   (resp/json (rrd/serialize-from-mongo true)))
+
+(defpage [:get "/run2"] []
+  (resp/json ((rrd/serialize-from-mongo false))))
      

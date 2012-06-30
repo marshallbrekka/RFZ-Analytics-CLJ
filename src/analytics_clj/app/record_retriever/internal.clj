@@ -1,4 +1,4 @@
-(ns record-retriever.internal)
+(ns analytics-clj.app.record-retriever.internal)
 (defn now [] (java.util.Date.))
 (defn log [msg]
   (println (now) msg))

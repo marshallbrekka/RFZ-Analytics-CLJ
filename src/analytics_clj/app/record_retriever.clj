@@ -1,11 +1,11 @@
-(ns record-retriever
+(ns analytics-clj.app.record-retriever
    (:require
-    [mongo]
-    [record-retriever.disc :as disc]
-    [record-retriever.offset :as offset]
-    [record-retriever.sets :as sets]
-    [record-retriever.processing :as processing]
-    [record-retriever.internal :as internal]
+    [analytics-clj.app.mongo]
+    [analytics-clj.app.record-retriever.disc :as disc]
+    [analytics-clj.app.record-retriever.offset :as offset]
+    [analytics-clj.app.record-retriever.sets :as sets]
+    [analytics-clj.app.record-retriever.processing :as processing]
+    [analytics-clj.app.record-retriever.internal :as internal]
 
     ;[app.config :as config]
     ;[app.util.io :as io]

@@ -1,5 +1,5 @@
-(ns record-retriever.offset
-  (:require [mongo]))
+(ns analytics-clj.app.record-retriever.offset
+  (:require [analytics-clj.app.mongo :as mongo]))
 (def offset-collection "timeseries-offsets")
 (def db (mongo/connect "mydb" "10.10.10.106" 27019))
 (def offsets 

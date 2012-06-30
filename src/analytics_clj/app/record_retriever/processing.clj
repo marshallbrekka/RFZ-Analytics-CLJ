@@ -1,4 +1,4 @@
-(ns record-retriever.processing)
+(ns analytics-clj.app.record-retriever.processing)
 
 
 (defn balances-to-deltas [points]
