@@ -14,6 +14,7 @@
      [:script {:src "js/plugins/highstock.js"}]
      [:script {:src "js/plugins/jquery-ui-1.8.21.custom.min.js"}]
      [:script {:src "js/plugins/jquery.dform-1.0.0.min.js"}]
+     [:script {:src "js/formBuilder.js"}]
      [:script {:src "js/api.js"}]
      [:script {:src "js/Graph.js"}]
      [:link {:href "css/styles.css" :rel "stylesheet" :type "text/css"}]

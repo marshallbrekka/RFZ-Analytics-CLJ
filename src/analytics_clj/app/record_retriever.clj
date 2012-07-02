@@ -61,7 +61,6 @@
   (let [fns (render processing/graph-types) 
         ids (sets/get-subset route setoptions)
         id-keywords (sets/ids-to-keywords ids)
-        ;l (log (str "id keywords " (count ids)))
         offsets (offset/get-offsets offset ids)
         user-data (internal/get-subset id-keywords (disc/deserialize-from-disc false) (fn [a] (= (:type a) "credits")) false)
         l (log (count user-data))
@@ -69,11 +68,9 @@
                 (let [user-offset (offset/get-offset offsets user-id)
                       redat
                   (map (fn [v]
-                         ;(log (str "v " (first v)))
-                         (->> (map #(internal/filter-point % user-offset) v)
-                              (filter internal/filter-nil))) 
-                       points)] 
-                  ;(log (str "post v " (first redat)))
+                      (->> (map #(internal/filter-point % user-offset) v)
+                           (filter internal/filter-nil))) 
+                      points)] 
                   redat)) user-data)]
 
     (log "filter completed")
@@ -91,10 +88,35 @@
            (reduce (fn [a b]
                     (if (empty? b)
                      a
-                                         (apply conj a b))) [] (get-records-for-plot-seperate (:set v) (:set-options v) (keyword (:render v)) (keyword (:offset v))))
+                     (apply conj a b))) [] (get-records-for-plot-seperate (:set v) (:set-options v) (keyword (:render v)) (keyword (:offset v))))
            [(get-records-for-plot (:set v) (:set-options v) (keyword (:render v)) (keyword (:offset v)))])) plots)))
 
+(defn endpoint [ver route]
+  {:route route
+   :input nil
+   :output nil
+   :example nil
+   :on-send nil})
+
+
+(defn in* [e data example]
+  (when (:return e)
+    (throw (Exception. "(in..) must come before (return ..)")))
+  (-> e
+    (assoc :in-verifier example)
+    (assoc :input "input")))
+
+(defmacro in [e data]
+  `(in* ~e ~data '~data))
 
 
 
+(defn add-endpoint [& args]
+  (apply println args))
+
+(defmacro defendpoint [ver route & body]
+  `(let [s# (-> (endpoint ~ver ~route)
+              ~@body)]
+     s#
+     ))
 
