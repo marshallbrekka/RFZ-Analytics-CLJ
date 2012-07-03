@@ -7,6 +7,12 @@
    {:key "date-joined" :label "Date Joined"}])
 
 
+(defn get-json-spec []
+  {:name      "offset" 
+   :caption   "Event Offset" 
+   :type      "select" 
+   :options   (apply merge (map (fn [v] {(keyword (:key v)) (:label v)}) offsets))
+  })
 
 (defn run-query [args]
   (mongo/run-query db offset-collection args)) 

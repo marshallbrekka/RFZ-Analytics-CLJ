@@ -36,7 +36,7 @@ FormBuilder.prototype._getFieldTypes = function(fields, spec) {
 
 FormBuilder.prototype._processValue = function(type, value) {
     if (type == "timestamp") {
-	return new Date(value).getTime()*1000;
+	return new Date(value).getTime();
     }
     if (type == "number") {
 	return parseInt(value);
@@ -50,7 +50,7 @@ FormBuilder.prototype._getData = function() {
 	var setVals = this.sets[i].getValues();
 	for (var name in setVals) {
 	    if (setVals.hasOwnProperty(name)) {
-		data['parts[' + i + ']' + name] = this._processValue(this.types[name], setVals[name]);
+		data['plots[' + i + ']' + name] = this._processValue(this.types[name], setVals[name]);
 	    }
 	}
     }
@@ -100,7 +100,7 @@ FormBuilder.Set.prototype.getValues = function() {
  */ 
 $.dform.addType("select-sub-fields", function (options) {
     var container = $('<div>');
-    var select = container.dform({type : "select", options :  options.options}).find("select");
+    var select = container.dform({type : "select", options :  options.options, name:options.name}).find("select");
     select.change(function() {
 	var value = select.val();
 	showOptions(value);

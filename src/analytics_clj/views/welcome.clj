@@ -37,16 +37,7 @@
      [:div#data-form]
      [:img#loader {:src "img/ajax.gif"}]
      [:div#container]
-     [:script (str "var offsets = " 
-                   (json/generate-string 
-                     (map (fn [item] {:value (:key item) :label (:label item)}) (rr/get-offsets)))
-                   "; var sets = " 
-                   (json/generate-string (rr/get-sets))
-                   "; var renderModes = [
-                   {value : 'total', label : 'Total Balances'}, 
-                   {value : 'average', label : 'Mean-Balance Rescaling'},
-                   {value : 'average-from-start', label : 'Percent Change from Start'},  
-                   {value : 'accounts', label : 'Accounts (Debugging)'}]; run(); //")]]))
+     [:script (str "var formspec = " (rr/get-form-spec) "; run(); //")]]))
 
 (defpage [:get "/api"] {:keys [plots]}
   (resp/json (rr/get-records plots)))

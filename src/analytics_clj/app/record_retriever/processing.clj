@@ -56,7 +56,18 @@
 
 
 (def graph-types {
-  :total {:filter balances-to-deltas :merge merge-by-total :post-merge post-merge-by-total}
-  :average {:filter balances-to-percent-change :merge merge-by-total :post-merge post-merge-by-total}
-  :average-from-start {:filter balances-to-percentage-of-start :merge merge-by-start :post-merge post-merge-by-total}})
+  :total {:filter balances-to-deltas :merge merge-by-total :post-merge post-merge-by-total :label "Total Balances"}
+  :average {:filter balances-to-percent-change :merge merge-by-total :post-merge post-merge-by-total :label "Mean-Balance Rescaling"}
+  :average-from-start {:filter balances-to-percentage-of-start :merge merge-by-start :post-merge post-merge-by-total :label "Percent Change from Start"}
+  :accounts {:label  "Accounts (Debugging)"}})
+
+
+
+(defn get-json-spec []
+  {:name    "render" 
+   :type    "select" 
+   :caption "Render Mode" 
+   :options (apply merge (map (fn [[k v]] {k (:label v)}) graph-types))
+  })
+  
 

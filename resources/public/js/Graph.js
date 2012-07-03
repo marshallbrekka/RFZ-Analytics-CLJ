@@ -1,8 +1,10 @@
 function run() {
-    var theForm = new form($("#data-form"), function(data) {
+    var theForm = new FormBuilder(function(data) {
 	getData(data);
+	console.log(data);
 	$("#loader").show();
-  }, sets, offsets, renderModes);
+  }, formspec);
+    $("#data-form").append(theForm.form);
 }
 
 

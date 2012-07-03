@@ -28,3 +28,8 @@ form {
 #container {
   height: 500px; min-width: 500px";
 }
+
+input, label, select {
+display:block;
+}
+
