@@ -1,6 +1,7 @@
 (ns analytics-clj.app.record-retriever.offset
-  (:require [analytics-clj.app.mongo :as mongo]
-            [analytics-clj.config :as config]))
+  (:require [analytics-clj.app.mongo  :as mongo]
+            [analytics-clj.config     :as config]))
+
 (def offset-collection "timeseries-offsets")
 (def db (apply mongo/connect (:mongo-offset config/conf)))
 (def offsets 
@@ -36,4 +37,13 @@
   (if (or (empty? data) (not (contains? data user-id)))
     0
     (user-id data)))
+
+
+(defn get-description [type-key]    
+  (str "Offset: " 
+       (:label 
+            (first 
+              (filter 
+                (fn [item] (= (:key item) type-key)) 
+                offsets)))))
 

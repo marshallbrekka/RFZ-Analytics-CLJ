@@ -16,6 +16,8 @@
           ts)]
     (* (int (Math/floor (float (/ ts (* 60 60 24))))) 60 60 24 1000)))
 
+(defn build-plot [points options info]
+  {:points points :options options :info info})
 
 (defn filter-point [point offset]
  ;(log (str point offset)) 

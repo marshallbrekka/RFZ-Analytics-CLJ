@@ -14,18 +14,44 @@
     [clojure.tools.logging :as lg]))
 
 
-
 (defn now [] (java.util.Date.))
-(defn log [msg]
-  (println (now) msg))
+(defn log [& msg]
+  (apply println (now) msg))
 
 
-
-(defn get-sets [] (sets/get-routes))
-(defn get-offsets [] offset/offsets)
 (defn get-form-spec [] 
-  (form-json/build-json ["set" (sets/get-json-spec)] ["offset" (offset/get-json-spec)] ["render" (processing/get-json-spec)]))
+  (form-json/build-json 
+    ["set" (sets/get-json-spec)] 
+    ["offset" (offset/get-json-spec)] 
+    ["render" (processing/get-json-spec)]))
 
+(defn get-plot-description [route render offset num-users]
+  (log "route: " route)
+  (log "offset: " offset)
+  (log "render: " render)
+  {:count   num-users 
+   :offset  (offset/get-description (:offset offset))
+   :set     (sets/get-description route)
+   :type    (processing/get-description (keyword (:render render)))
+  })
+
+"
+(defn filter-merge [fns user-points]
+  (let [data (if (empty? ids)
+               {}
+               (apply concat
+                    (let [dat
+                    (map (fn [[user-id points]]
+                        (let [user-offset (offset/get-offset offsets user-id)]
+                          (->> (map (fn [p] (internal/filter-point p user-offset)) points)
+                               (filter internal/filter-nil)
+                               ((:filter fns))))) user-points)]
+                          
+                      (log (str \"sum \" (reduce (fn [a b] (+ a (last (first b)))) 0 dat)))
+                      ;(log dat)                      
+                      dat)))]"
+
+   
 
 
 (defn get-records-for-plot [route render offset]
@@ -37,7 +63,8 @@
         user-points (internal/get-subset id-keywords (disc/deserialize-from-disc true))
        
         ;l (log id-keywords)
-        l (log (count user-points))
+        l (log "num users " (count ids))
+        l (log "num u points " (count user-points))
         l (log (count (first user-points)))
         ;l (log (first user-points))
         data (if (empty? ids)
@@ -59,7 +86,9 @@
     (log (count data))
     (log (type data))
     (log (first data))
-    (internal/merge-data data (:merge fns) (:post-merge fns))))
+    {:info    (get-plot-description route render offset (count ids))
+     :points  (internal/merge-data data (:merge fns) (:post-merge fns))
+    } ))
 
 
 
@@ -89,11 +118,13 @@
 
 
 (defn get-records [plots]
-  (filter (fn [v] (not= v nil)) (reduce (fn [a b] (apply conj a b)) [] (map (fn [[k v]]
+  ;(filter (fn [v] (not= v nil)) (reduce (fn [a b] (apply conj a b)) [] 
+      (map (fn [[k v]]
          (if (= (:render v) "accounts")
            (reduce (fn [a b]
                     (if (empty? b)
                      a
                      (apply conj a b))) [] (get-records-for-plot-seperate (:set v) (:render v) (:offset v)))
-           [(get-records-for-plot (:set v) (:render v) (:offset v))])) plots))))
+           (get-records-for-plot (:set v) (:render v) (:offset v)))) plots))
+;))
 

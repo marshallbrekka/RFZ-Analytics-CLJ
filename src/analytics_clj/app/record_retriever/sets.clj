@@ -1,6 +1,9 @@
 (ns analytics-clj.app.record-retriever.sets
   (:require [cheshire.core :as json]
-            [clj-http.client :as client]))
+            [clj-http.client :as client])
+  (:use 
+            [clj-time.format]
+            [clj-time.coerce]))
 (def schema-url "https://beta.readyforzero.com/api/stat")
 
 (defn create-schema-keys [schema]
@@ -15,8 +18,20 @@
 
 (def schema (update-in (create-schema-keys (json/parse-string (:body (client/get (str schema-url "/json"))))) [:endpoints] 
                                           (fn [eps] (filter (fn [ep] (not= "/json" (last (:route ep)))) eps))))
-(defn get-routes []
-  (conj (map (fn [ept] {:value (last (:route ept)) :label (:info ept) :options (:in ept)}) (:endpoints schema)) {:value "all-users" :label "Get All Users" :options []}))
+
+(defn get-endpoint-helper[endpoints path]
+  (if (empty? endpoints) nil
+    (let [cur (first endpoints)]
+      (if (= (last (:route cur)) path)
+        cur
+        (get-endpoint-helper (rest endpoints) path)))))
+
+
+(defn get-endpoint [path]
+  (get-endpoint-helper (:endpoints schema) path))
+  
+
+
 
 (declare make-sub-fields)
 (defn get-json-spec []
@@ -44,22 +59,34 @@
            :name    (first a)
           })) input-form (conj (vec (rest input-form)) nil))))
 
-
 (defn get-subset [params]
     (let [route (:set params)
           params (dissoc params :set)]
       (println route)
       (println params)
 
-    
-    (let [params (if (= route "all-users" ) {:end "1375228800000" :start "0"} params)
-          route (if (= route "all-users") "/subset/date-joined" route)]
-
-    (let [params (apply merge (map (fn [[k v]] {k (long (Float/parseFloat v))}) params))
+      (let [params (apply merge (map (fn [[k v]] {k (long (Float/parseFloat v))}) params))
         ids (json/parse-string (:body (client/post (str schema-url route) 
                                       {:headers {"Content-Type" "application/json" "Cookie" "disable-csrf=true;"} 
                                        :body (json/generate-string params)})))]
-    (map (fn [id] (get id "id")) ids)))))
+    (map (fn [id] (get id "id")) ids))))
+
+(defn get-description [params]
+  (let [route (:set params)
+        params (dissoc params :set)
+        data (get-endpoint route)
+        filters (reduce 
+                  (fn [re param]
+                    (let [pval ((keyword (first param)) params)
+                          pval (if (= (:type (last param)) "timestamp")
+                                (unparse (formatter "MM/dd/yy")
+                                    (from-long (long (Float/parseFloat pval))))
+                                 pval)]
+                      (str re (:label (last param)) ": " pval ". ")))
+                    "" (:input-form data))]
+        [(:info data) filters]))
+        
+    
     
 (defn ids-to-keywords [ids]
   (map (fn [a] (keyword (str (int a)))) ids))

@@ -69,5 +69,9 @@
    :caption "Render Mode" 
    :options (apply merge (map (fn [[k v]] {k (:label v)}) graph-types))
   })
-  
 
+
+  
+(defn get-description [type-key]
+  (println type-key)
+  (str "Graph Type: " (:label (type-key graph-types))))
