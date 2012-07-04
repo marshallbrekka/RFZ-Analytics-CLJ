@@ -1,3 +1,10 @@
+// File-level comments are helpful for people ot know what to
+// expect. It helps them understand the code at an application level
+// scope.
+// 
+// In general, you shouldn't declare things in the top level namespace.
+// And in future projects, you should probably use modules (eg: rquire.js) (no biggie here tho)
+
 function run() {
     var theForm = new form($("#data-form"), function(data) {
 	getData(data);

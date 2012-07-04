@@ -1,6 +1,11 @@
+;; !! top-level comments.
+
 (ns analytics-clj.app.file-io 
   (:require [cheshire.core :as json])
+  ;; !! Suggest to use [] instead of () below, eg: [java.io
   (:import (java.io BufferedReader FileReader BufferedWriter FileWriter)))
+
+;; !! Don't think that you need "into" or "str" below.
 (def directory (str (get (into {} (System/getenv)) "RFZ_ANALYTICS_FILES") "/"))
 
 (defn read-lines [file]

@@ -1,3 +1,5 @@
+;; !! top-level comments.
+
 (ns analytics-clj.app.record-retriever
    (:require
     [analytics-clj.app.mongo]
@@ -19,13 +21,16 @@
   (println (now) msg))
 
 
-
+;; !! doc strings
 (defn get-sets [] (sets/get-routes))
 (defn get-offsets [] offset/offsets)
 
 
 
 (defn get-records-for-plot [route setoptions render offset]
+  ;; !! Super-long let functions are often signs that it should be split up.
+  ;; next time try creating things by composition, eg (-> {} (with-ids) (with-offsets))
+  
   (let [fns (render processing/graph-types) 
         ids (sets/get-subset route setoptions)
         id-keywords (sets/ids-to-keywords ids)
@@ -86,10 +91,13 @@
 
 
 (defn get-records [plots]
+  ;; !! more than 4-5 levels of indentation is a code smell. if you break the lambdas out into other functions, then it
+  ;; becomes more self documenting. If you think a function is too small to be on it's own, try letfn
   (reduce (fn [a b] (apply conj a b)) [] (map (fn [[k v]]
          (if (= (:render v) "accounts")
+           
            (reduce (fn [a b]
-                    (if (empty? b)
+                     (if (empty? b)
                      a
                                          (apply conj a b))) [] (get-records-for-plot-seperate (:set v) (:set-options v) (keyword (:render v)) (keyword (:offset v))))
            [(get-records-for-plot (:set v) (:set-options v) (keyword (:render v)) (keyword (:offset v)))])) plots)))

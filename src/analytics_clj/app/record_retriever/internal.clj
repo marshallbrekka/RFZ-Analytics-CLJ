@@ -45,6 +45,7 @@
 
 (defn merge-data [data merge-fn post-merge-fn]
   (log (str "merge start " (count data)))
+  ;; !! rebindign in let is a code smell, shoudln't happen very often. If you don't need the result of a let statement, use _ (or lg/spy)
   (let [data (sort-by first data)
         l (log "sorted")
         data (filter (fn [pt] 

@@ -14,7 +14,7 @@
 (defn post-merge-by-total [final point]
   (if (nil? point)
     (println "point is nil"))
-  (let [fin (if (nil? final) [] final)
+  (let [fin (if (nil? final) [] final) ;; !! can use (or final [])
         prev-bal (if (nil? final) 0 (* 100 (last (last final))))]
     (conj fin [(first point) (/ (+ prev-bal (last point)) 100)])))
 
@@ -42,10 +42,10 @@
 
 (defn balances-to-percentage-of-start [points]
   ;(println "pre delta points " points)
-  (let [start (last (first points))
+  (let [start (last (first points)) ;; !! rebinding probably not necessar.
         start (if (= 0.0 start) 1 start)]
     (let [bal (balances-to-deltas (map (fn [[t b]] [t (/ b start)]) points))]
-      ;(println "post deltas " bal) 
+      ;(println "post deltas " bal)
       bal)))
 
 (defn merge-by-start [points]

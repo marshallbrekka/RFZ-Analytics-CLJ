@@ -32,6 +32,7 @@
                     :only {:user-id 1 :ts 1 :balance 1 :account-id 1 :itemType 1}}))
 
 (defn get-day-balances [pts]
+  ;; !! Can't you just "map last" or better, (->> pts (partition-by :ts-day) (map last))
   (map (fn [logs] (last logs)) (partition-by :ts-day pts)))
 
 (defn calc-deltas 
@@ -55,12 +56,16 @@
   "takes a seq of deltas for various accounts 
    merges them by ts into deltas for each day"
   [pts]
+  ;; !! could successfully use thrush operator (->> pts (sort-by :ts-day) (partition-by :ts-day) (map merge-day))
   (let [sorted (sort-by :ts-day pts)]
     (map merge-day (partition-by :ts-day sorted)))) 
 
 
 (defn calc-totals-from-deltas [deltas]
-  (reduce (fn [a b] (conj a [(first b) (+ (last (last a)) (last b))])) [(first deltas)] (rest deltas)))
+  ;; !! I'm not sure what this is doing, but I'm sure there's a more idiomatic way. A doc-string would help me figure it out :)
+  (reduce (fn [a b]
+            (conj a [(first b) (+ (last (last a)) (last b))]))
+          [(first deltas)] (rest deltas)))
 
 
 
@@ -70,8 +75,10 @@
 
 (defn extend-to-start-date [date account-pts]
   (map (fn [account]
-    (if (> (:ts-day (first account)) date)
-      (cons (update-in (first account) [:ts-day] (fn [a] date)) (cons (update-in (first account) [:balance] (fn [a] 0)) (rest account)))
+         (if (> (:ts-day (first account)) date)
+           ;; !! Not sure what the line below is doing, but it's probably too complicated.
+      (cons (update-in (first account) [:ts-day] (fn [a] date))
+            (cons (update-in (first account) [:balance] (fn [a] 0)) (rest account)))
       account)) account-pts))
 
 (defn match-start-date-on-accounts [accounts offsets]
@@ -144,11 +151,14 @@
             (let [file (if flat-file? file-name file-name-seperate)
                   f (file-io/open file)
                   data (file-io/read-lines f)]
+              ;; !! In general, you'll find your logs more useful if you pack as much info as you can into a readable line,
+              ;;    eg: "Finished processing %d records of type %s in %s seconds." or something like that.
               (log "finished")
               (log (count data))
               (log (type data))
             data)) data-obj)]
-      (if flat-file?
+    (if flat-file?
+      ;; !! having a def inside a function is weird.
       (def user-data-flat ud)
       (def user-data ud))
     ud)) 
