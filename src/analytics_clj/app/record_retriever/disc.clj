@@ -3,14 +3,15 @@
     [analytics-clj.app.file-io :as file-io]
     [analytics-clj.app.record-retriever.internal :as internal]
     [analytics-clj.app.record-retriever.offset :as offset]
-    [analytics-clj.app.mongo :as mongo]))
+    [analytics-clj.app.mongo :as mongo]
+    [analytics-clj.config :as config]))
 
 
 (defn now [] (java.util.Date.))
 (defn log [msg]
   (println (now) msg))
 (def mongo-collection "snapshot-balances")
-(def conn (mongo/connect "mydb"))
+(def conn (apply mongo/connect (:mongo-balances config/conf)))
 (def file-name "data2.json")
 (def file-name-seperate "data-seperate.json")
 

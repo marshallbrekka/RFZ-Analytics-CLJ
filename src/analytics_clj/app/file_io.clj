@@ -1,7 +1,8 @@
 (ns analytics-clj.app.file-io 
-  (:require [cheshire.core :as json])
+  (:require [cheshire.core :as json]
+            [analytics-clj.config :as config])
   (:import (java.io BufferedReader FileReader BufferedWriter FileWriter)))
-(def directory (str (get (into {} (System/getenv)) "RFZ_ANALYTICS_FILES") "/"))
+(def directory (str (:data-files config/conf) "/"))
 
 (defn read-lines [file]
   (apply merge (pmap (fn [a] (json/parse-string a true)) (line-seq file))))

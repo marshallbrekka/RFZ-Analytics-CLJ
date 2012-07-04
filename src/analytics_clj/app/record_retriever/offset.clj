@@ -1,7 +1,8 @@
 (ns analytics-clj.app.record-retriever.offset
-  (:require [analytics-clj.app.mongo :as mongo]))
+  (:require [analytics-clj.app.mongo :as mongo]
+            [analytics-clj.config :as config]))
 (def offset-collection "timeseries-offsets")
-(def db (mongo/connect "mydb" "10.10.10.106" 27019))
+(def db (apply mongo/connect (:mongo-offset config/conf)))
 (def offsets 
   [{:key "no-offset" :label "No Offset"}
    {:key "date-joined" :label "Date Joined"}])
