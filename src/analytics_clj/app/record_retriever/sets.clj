@@ -53,15 +53,12 @@
       (println route)
       (println params)
 
-    
-    (let [params (if (= route "all-users" ) {:end "1375228800000" :start "0"} params)
-          route (if (= route "all-users") "/subset/date-joined" route)]
-
     (let [params (apply merge (map (fn [[k v]] {k (long (Float/parseFloat v))}) params))
-        ids (json/parse-string (:body (client/post (str schema-url route "?secret=" secret) 
-                                      {:headers {"Content-Type" "application/json" "Cookie" "disable-csrf=true;"} 
-                                       :body (json/generate-string params)})))]
-    (map (fn [id] (get id "id")) ids)))))
+          ids (json/parse-string (:body 
+                                   (client/post (str schema-url route) 
+                                        {:headers {"Content-Type" "application/json" "Cookie" "disable-csrf=true;"} 
+                                         :body (json/generate-string (assoc params :secret secret))})))]
+    (map (fn [id] (get id "id")) ids))))
     
 (defn ids-to-keywords [ids]
   (map (fn [a] (keyword (str (int a)))) ids))
