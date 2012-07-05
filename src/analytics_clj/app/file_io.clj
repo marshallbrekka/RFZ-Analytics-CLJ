@@ -7,6 +7,9 @@
 (defn read-lines [file]
   (apply merge (pmap (fn [a] (json/parse-string a true)) (line-seq file))))
 
+(defn read-line [file]
+  (first (line-seq file)))
+
 
 (defn write-lines [file data]
     (println "in writer " (count data))

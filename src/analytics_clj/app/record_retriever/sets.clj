@@ -1,7 +1,9 @@
 (ns analytics-clj.app.record-retriever.sets
   (:require [cheshire.core :as json]
-            [clj-http.client :as client]))
+            [clj-http.client :as client]
+            [analytics-clj.app.file-io :as file-io]))
 (def schema-url "https://beta.readyforzero.com/api/stat")
+(def secret (file-io/read-line (file-io/open "secret.txt")))
 
 (defn create-schema-keys [schema]
   (cond (= (type schema) (type {}))
@@ -13,7 +15,7 @@
 
     
 
-(def schema (update-in (create-schema-keys (json/parse-string (:body (client/get (str schema-url "/json"))))) [:endpoints] 
+(def schema (update-in (create-schema-keys (json/parse-string (:body (client/get (str schema-url "/json?secret=" secret))))) [:endpoints] 
                                           (fn [eps] (filter (fn [ep] (not= "/json" (last (:route ep)))) eps))))
 (defn get-routes []
   (conj (map (fn [ept] {:value (last (:route ept)) :label (:info ept) :options (:in ept)}) (:endpoints schema)) {:value "all-users" :label "Get All Users" :options []}))
@@ -56,7 +58,7 @@
           route (if (= route "all-users") "/subset/date-joined" route)]
 
     (let [params (apply merge (map (fn [[k v]] {k (long (Float/parseFloat v))}) params))
-        ids (json/parse-string (:body (client/post (str schema-url route) 
+        ids (json/parse-string (:body (client/post (str schema-url route "?secret=" secret) 
                                       {:headers {"Content-Type" "application/json" "Cookie" "disable-csrf=true;"} 
                                        :body (json/generate-string params)})))]
     (map (fn [id] (get id "id")) ids)))))
