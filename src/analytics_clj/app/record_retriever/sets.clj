@@ -3,7 +3,7 @@
             [clj-http.client :as client]
             [analytics-clj.app.file-io :as file-io]))
 (def schema-url "https://beta.readyforzero.com/api/stat")
-(def secret (file-io/read-line (file-io/open "secret.txt")))
+(def secret (file-io/read-first-line (file-io/open "secret.txt")))
 
 (defn create-schema-keys [schema]
   (cond (= (type schema) (type {}))

@@ -7,7 +7,7 @@
 (defn read-lines [file]
   (apply merge (pmap (fn [a] (json/parse-string a true)) (line-seq file))))
 
-(defn read-line [file]
+(defn read-first-line [file]
   (first (line-seq file)))
 
 
