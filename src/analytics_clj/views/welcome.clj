@@ -46,5 +46,5 @@
   (resp/json (rrd/serialize-from-mongo true)))
 
 (defpage [:get "/run2"] []
-  (resp/json ((rrd/serialize-from-mongo false))))
+  (resp/json (rrd/serialize-from-mongo false)))
      
