@@ -1,10 +1,12 @@
 (ns analytics-clj.app.record-retriever.sets
   (:require [cheshire.core :as json]
-            [clj-http.client :as client])
+            [clj-http.client :as client]
+            [analytics-clj.app.file-io :as file-io])
   (:use 
             [clj-time.format]
             [clj-time.coerce]))
 (def schema-url "https://beta.readyforzero.com/api/stat")
+(def secret (file-io/read-first-line (file-io/open "secret.txt")))
 
 (defn create-schema-keys [schema]
   (cond (= (type schema) (type {}))
@@ -16,7 +18,7 @@
 
     
 
-(def schema (update-in (create-schema-keys (json/parse-string (:body (client/get (str schema-url "/json"))))) [:endpoints] 
+(def schema (update-in (create-schema-keys (json/parse-string (:body (client/get (str schema-url "/json?secret=" secret))))) [:endpoints] 
                                           (fn [eps] (filter (fn [ep] (not= "/json" (last (:route ep)))) eps))))
 
 (defn get-endpoint-helper[endpoints path]
@@ -66,10 +68,12 @@
       (println params)
 
       (let [params (apply merge (map (fn [[k v]] {k (long (Float/parseFloat v))}) params))
-        ids (json/parse-string (:body (client/post (str schema-url route) 
-                                      {:headers {"Content-Type" "application/json" "Cookie" "disable-csrf=true;"} 
-                                       :body (json/generate-string params)})))]
-    (map (fn [id] (get id "id")) ids))))
+            ids (json/parse-string (:body 
+                                      (client/post (str schema-url route) 
+                                        {:headers {"Content-Type" "application/json" 
+                                                   "Cookie" "disable-csrf=true;"} 
+                                         :body (json/generate-string (assoc params :secret secret))})))]
+    (map #(get % "id") ids))))
 
 (defn get-description [params]
   (let [route (:set params)
@@ -85,9 +89,7 @@
                       (str re (:label (last param)) ": " pval ". ")))
                     "" (:input-form data))]
         [(:info data) filters]))
-        
-    
-    
+            
 (defn ids-to-keywords [ids]
   (map (fn [a] (keyword (str (int a)))) ids))
 

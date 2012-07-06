@@ -16,16 +16,13 @@
 (defn process-names-helper-map [pre k v]
   {k (if (= k :name)
     (str pre "[" v "]")
-    (if (coll? v) 
-      (if (map? v)
-        (apply merge (map (fn [[k v]] (process-names-helper-map pre k v)) v))
-        (map (fn [v] (process-names-helper-col pre v)) v))
-      v))})
+    (process-names-helper-col pre v))})
 
 (defn process-names-helper-col [pre v]
   (if (coll? v)
      (if (map? v)
       (apply merge (map (fn [[k v]] (process-names-helper-map pre k v)) v))
-      (map (fn [v] (process-names-helper-col pre v)) v))
+      (map #(process-names-helper-col pre %) v))
     v))
+
 
