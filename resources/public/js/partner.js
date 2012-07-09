@@ -1,4 +1,4 @@
-(function(globOptions) {
+function Partner(selector, globOptions) {
     var chart = null;
     var api = function(config) {
 	this.config = config;
@@ -34,7 +34,7 @@
         //console.log(data.length);
         //console.log(data);
 	//$('#loader').hide();
-        createGraph('container', data);
+        createGraph($(selector).get(0), data);
                 
     }); 
 } 
@@ -79,7 +79,9 @@ getData(globOptions.params);
 
 
 
-})({
+}
+/*
+new Partner("#container", {
     url : "http://localhost:8888/",
     params : {
 	"plots[0][set][set]":"/subset/credit-score",
@@ -88,5 +90,5 @@ getData(globOptions.params);
 	"plots[0][offset][offset]":"date-joined",
 	"plots[0][render][render]":"total"
     }
-});
+});*/
 	
