@@ -1,3 +1,4 @@
+(function() {
 function Partner(selector, globOptions) {
     var chart = null;
     var api = function(config) {
@@ -27,59 +28,58 @@ function Partner(selector, globOptions) {
 
     
     function getData(options) {
-    var data = new api({
-        url : globOptions.url + 'api?'});
-    data.get(options, function(data){
+	var data = new api({
+	    url : globOptions.url + 'api?'});
+	data.get(options, function(data){
         
-        //console.log(data.length);
-        //console.log(data);
-	//$('#loader').hide();
-        createGraph($(selector).get(0), data);
+	    //console.log(data.length);
+	    //console.log(data);
+	    //$('#loader').hide();
+	    createGraph($(selector).get(0), data);
                 
-    }); 
-} 
+	}); 
+    } 
     
 
-function createGraph(container, data) {
-    var series = [];
-    for (var i = 0; i < data.length; i++) {
-	var temp = data[i];
-	series.push({
-            data : temp,
-            pointStart: new Date(temp[0][0]),
-            pointInterval: 24 * 3600,
-            tooltip: {
-                valueDecimals: 2
-            }
-        });
+    function createGraph(container, data) {
+	var series = [];
+	for (var i = 0; i < data.length; i++) {
+	    var temp = data[i];
+	    series.push({
+		data : temp,
+		pointStart: new Date(temp[0][0]),
+		pointInterval: 24 * 3600,
+		tooltip: {
+		    valueDecimals: 2
+		}
+	    });
+	}
+
+	chart = new Highcharts.StockChart({
+	    chart : {
+		renderTo : container
+	    },
+
+	    rangeSelector : {
+		selected : 1
+	    },
+
+	    title : {
+		text : 'User Balance Graphs'
+	    },
+
+	    series : series
+	});
+
+
     }
 
-    chart = new Highcharts.StockChart({
-        chart : {
-            renderTo : container
-        },
-
-        rangeSelector : {
-            selected : 1
-        },
-
-        title : {
-            text : 'User Balance Graphs'
-        },
-
-        series : series
-    });
-
+    getData(globOptions.params);
 
 }
 
-getData(globOptions.params);
-
-
-
-
-
-}
+window.Partner = Partner;
+})();
 /*
 new Partner("#container", {
     url : "http://localhost:8888/",
