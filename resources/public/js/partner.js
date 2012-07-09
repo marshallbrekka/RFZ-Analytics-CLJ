@@ -1,4 +1,5 @@
 (function(globOptions) {
+    var chart = null;
     var api = function(config) {
 	this.config = config;
     }
@@ -32,7 +33,7 @@
         
         //console.log(data.length);
         //console.log(data);
-	$('#loader').hide();
+	//$('#loader').hide();
         createGraph('container', data);
                 
     }); 
@@ -53,7 +54,7 @@ function createGraph(container, data) {
         });
     }
 
-    window.chart = new Highcharts.StockChart({
+    chart = new Highcharts.StockChart({
         chart : {
             renderTo : container
         },
