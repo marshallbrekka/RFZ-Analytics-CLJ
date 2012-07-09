@@ -118,7 +118,7 @@ form.prototype._makeSelectionList = function(index, name, options) {
  
 function getData(options) {
     var data = new api({
-        url:location.origin + ':' + location.port + location.pathname + 'api?'});
+        url:location.origin + location.pathname + 'api?'});
     data.get(options, function(data){
         
         console.log(data.length);
