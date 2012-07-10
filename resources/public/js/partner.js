@@ -109,7 +109,11 @@ function Partner(selector, globOptions) {
 		enabled : false
 	    },
 	    navigator : {
-		enabled : false
+		xAxis : {
+		    labels : {
+			    formatter : function(){return ""}
+		    }
+		}
 	    },
 	    tooltip : {
 		enabled : false
@@ -132,7 +136,7 @@ function Partner(selector, globOptions) {
 
 window.Partner = Partner;
 })();
-/*
+
 new Partner("#container", {
     url : "http://localhost:8888/",
     params : {
@@ -142,5 +146,5 @@ new Partner("#container", {
 	"plots[0][offset][offset]":"date-joined",
 	"plots[0][render][render]":"total"
     }
-});*/
+});
 	

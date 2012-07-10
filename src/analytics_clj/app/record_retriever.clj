@@ -61,6 +61,8 @@
     (log (first data))
     (internal/merge-data data (:merge fns) (:post-merge fns))))
 
+(def get-records-mem (memoize get-records-for-plot))
+
 
 
 (defn get-records-for-plot-seperate [route render offset]
@@ -95,5 +97,5 @@
                     (if (empty? b)
                      a
                      (apply conj a b))) [] (get-records-for-plot-seperate (:set v) (:render v) (:offset v)))
-           [(get-records-for-plot (:set v) (:render v) (:offset v))])) plots))))
+           [(get-records-mem (:set v) (:render v) (:offset v))])) plots))))
 
