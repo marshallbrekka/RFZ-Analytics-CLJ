@@ -19,7 +19,7 @@
 
 (defn filter-point [point offset]
  ;(log (str point offset)) 
-    (when (and (first point) (not= (first point) 0))
+    (when (and (first point) (not= (first point) 0) (filter-nil offset))
       (let [
             balance (last point) 
             ts (- (first point) (get-day offset))]

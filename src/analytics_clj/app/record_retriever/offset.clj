@@ -33,7 +33,7 @@
           (apply merge (map (fn [a] {(keyword (str (:user-id a))) (:ts a)}) data)))))
 
 (defn get-offset [data user-id]
-  (if (or (empty? data) (not (contains? data user-id)))
-    0
-    (user-id data)))
+  (cond (empty? data) 0 
+        (contains? data user-id) (user-id data)
+        :else nil))
 

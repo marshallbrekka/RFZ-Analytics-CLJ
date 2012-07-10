@@ -50,7 +50,7 @@
                                (filter internal/filter-nil)
                                ((:filter fns))))) user-points)]
                           
-                      (log (str "sum " (reduce (fn [a b] (+ a (last (first b)))) 0 dat)))
+                      ;(log (str "sum " (reduce (fn [a b] (+ a (last (first b)))) 0 dat)))
                       ;(log dat)                      
                       dat)))]
                                        
