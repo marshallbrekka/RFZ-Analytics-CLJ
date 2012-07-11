@@ -140,9 +140,8 @@ window.Partner = Partner;
 new Partner("#container", {
     url : "http://localhost:8888/",
     params : {
-	"plots[0][set][set]":"/subset/credit-score",
-	"plots[0][set][min]":"200",
-	"plots[0][set][max]":"900",
+	"plots[0][set][set]":"/subset/partner-users",
+	"plots[0][set][email]":"citi@readyforzero.com",
 	"plots[0][offset][offset]":"date-joined",
 	"plots[0][render][render]":"total"
     }

@@ -46,6 +46,21 @@
            :name    (first a)
           })) input-form (conj (vec (rest input-form)) nil))))
 
+(defn get-endpoint [route]
+  (first (filter  #(= route (last (:route %))) (:endpoints schema))))
+
+(defn process-param [route pkey pval]
+  ;(println route pkey pval)
+  ;(println (json/generate-string [route pkey pval]))
+  (let [ptype (->> (get-endpoint route)
+                  (:input-form)
+                  (filter #(= pkey (first %)))
+                  (first)
+                  (last)
+                  (:type))]
+      (if (or (= ptype "number") (= ptype "timestamp"))
+          (long (Float/parseFloat pval))
+          pval)))
 
 (defn get-subset [params]
     (let [route (:set params)
@@ -53,13 +68,20 @@
       (println route)
       (println params)
 
-    (let [params (apply merge (map (fn [[k v]] {k (long (Float/parseFloat v))}) params))
-          ids (json/parse-string (:body 
+    (let [params (apply merge (map (fn [[k v]] {k (process-param route (name k) v)}) params))
+          ids (:body 
                                    (client/post (str schema-url route) 
                                         {:headers {"Content-Type" "application/json" "Cookie" "disable-csrf=true;"} 
-                                         :body (json/generate-string (assoc params :secret secret))})))]
-    (map (fn [id] (get id "id")) ids))))
+                                         :body (json/generate-string (assoc params :secret secret))}))]
+    ;(println "request" (json/generate-string (assoc params :secret secret)))
+    ;(println ids)
+    (map (fn [id] (get id "id")) (json/parse-string ids)))))
+
+
     
 (defn ids-to-keywords [ids]
-  (map (fn [a] (keyword (str (int a)))) ids))
+  (println "num from ids to keywrods " (count ids))
+  (if (nil? ids)
+      '()
+  (map (fn [a] (keyword (str (int a)))) ids)))
 
