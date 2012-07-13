@@ -113,6 +113,7 @@
            account)) account-pts))
 
 (defn match-start-date-on-accounts [accounts offsets]
+  
   (->> (-> accounts
            (first)
            (first)
@@ -175,7 +176,7 @@
 
 
 (defn serialize-from-mongo [type-key]
-  (let [user-ids [1 3 2598];(mongo/get-distinct conn mongo-collection "user-id")
+  (let [user-ids (mongo/get-distinct conn mongo-collection "user-id")
         offsets (offset/get-offsets "date-joined" user-ids)
         file (file-io/open-write (:file (type-key types)))]
         (doseq [x (map (fn [uid]

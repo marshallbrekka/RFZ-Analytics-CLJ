@@ -57,7 +57,7 @@
   (let [start (->> points
                   (first)
                   (last)
-                  (#(if (= 0.0 %) 1 %)))]
+                  (#(if (= 0.0 (double %)) 1 %)))]
     (balances-to-deltas (map (fn [[t b]] [t (/ b start)]) points))))
     
 
@@ -71,8 +71,7 @@
 (def graph-types {
   :total {:filter balances-to-deltas :merge merge-by-total :post-merge post-merge-by-total :label "Total Balances"}
   :average {:filter balances-to-percent-change :merge merge-by-total :post-merge post-merge-by-total :label "Mean-Balance Rescaling"}
-  :average-from-start {:filter balances-to-percentage-of-start :merge merge-by-start :post-merge post-merge-by-total :label "Percent Change from Start"}
-  :accounts {:label  "Accounts (Debugging)"}})
+  :average-from-start {:filter balances-to-percentage-of-start :merge merge-by-start :post-merge post-merge-by-total :label "Percent Change from Start"}})
 
 
 

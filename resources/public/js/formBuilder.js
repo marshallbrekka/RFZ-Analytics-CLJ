@@ -65,7 +65,7 @@ FormBuilder.prototype._addSet = function(spec) {
 
 FormBuilder.prototype._removeCallback = function(set) {
     var index = this.sets.indexOf(set);
-    this.sets = this.sets.splice(index, 1);
+    this.sets.splice(index, 1);
 }
 
 FormBuilder.Set = function(removeCallback, spec) {

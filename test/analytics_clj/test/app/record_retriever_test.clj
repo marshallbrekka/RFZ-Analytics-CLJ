@@ -9,14 +9,14 @@
           filter-fn (fn [timeline] (map (fn [pt] [(first pt) (+ 1 (last pt))]) 
                                         timeline))
           offset 0
-          output (list {:points (list [1 101] [2 21] [3 41])} {:points (list [1 21] [2 11] [3 6])})
+          output (list {:uid 2 :points (list [1 101] [2 21] [3 41])} {:uid 2 :points (list [1 21] [2 11] [3 6])})
           offset2 1341792000
-          output2 (list {:points (list[-1341791999999 101] [-1341791999998 21] [-1341791999997 41])} {:points (list [-1341791999999 21] [-1341791999998 11] [-1341791999997 6])})
+          output2 (list {:uid 3 :points (list[-1341791999999 101] [-1341791999998 21] [-1341791999997 41])} {:uid 3 :points (list [-1341791999999 21] [-1341791999998 11] [-1341791999997 6])})
           offset3 nil
-          output3 (list {:points (list)} {:points (list)}) ]
-      (is (= (rr/filter-timelines filter-fn offset timelines) output))
-      (is (= (rr/filter-timelines filter-fn offset2 timelines) output2))
-      (is (= (rr/filter-timelines filter-fn offset3 timelines) output3)))))
+          output3 (list {:uid 4 :points (list)} {:uid 4 :points (list)}) ]
+      (is (= (rr/filter-timelines filter-fn offset timelines :2) output))
+      (is (= (rr/filter-timelines filter-fn offset2 timelines :3) output2))
+      (is (= (rr/filter-timelines filter-fn offset3 timelines :4) output3)))))
 
 (deftest merge-batches
   (testing "merge-batches"
@@ -45,7 +45,7 @@
           offsets {:1 0}
           batch-type :merged
           fns (:total processing/graph-types)
-          output (list {:info "all"
+          output (list {:info "All"
                         :timelines [[1 120.0] [2 30.0] [3 45.0]]})]
       (is (= (rr/process-plot-data pts offsets batch-type fns)) output))))
           

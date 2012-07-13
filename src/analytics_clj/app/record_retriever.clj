@@ -24,7 +24,8 @@
   (form-json/build-json 
     ["set" (sets/get-json-spec)] 
     ["offset" (offset/get-json-spec)] 
-    ["render" (processing/get-json-spec)]))
+    ["render" (processing/get-json-spec)]
+    ["batch" (batching/get-json-spec)]))
 
 (defn get-plot-description [route render offset num-users]
   (log "route: " route)
@@ -35,19 +36,20 @@
    :set     (sets/get-description route)
    :type    (processing/get-description (keyword (:render render)))})
 
-(defn filter-timelines [filter-fn offset timelines]
+(defn filter-timelines [filter-fn offset timelines id]
   (map (fn [timeline] 
-         (update-in timeline [:points] 
-                    #(->> (map (fn [point] (internal/apply-offset offset point)) %) 
-                          (filter internal/filter-nil)
-                          (filter-fn)))) timelines))
+         (-> (update-in timeline [:points] 
+                        #(->> (map (fn [point] (internal/apply-offset offset point)) %) 
+                              (filter internal/filter-nil)
+                              (filter-fn)))
+             (merge {:uid (read-string (name id))}))) timelines))
 
 (defn merge-batches [merge-fn post-merge-fn batches]
   (map (fn [batch]
           (update-in batch [:timelines] 
             #(internal/merge-data 
                 %
-                merge-fn 
+                merge-fn
                 post-merge-fn))) batches))
 
 (defn build-plot-spec [route render offset num-ids batches]
@@ -65,13 +67,11 @@
                     (not= true)))))
 
 (defn process-plot-data [user-points offsets batch-type fns]
-  (log "user points")
-  (log user-points)
   (->> (map (fn [[id timelines]] 
               (filter-timelines
                 (:filter fns) 
                 (offset/get-offset offsets id)
-                timelines))
+                timelines id))
             user-points)
         (filter-out-empty-timelines)
         (batching/batch batch-type)
@@ -82,7 +82,7 @@
   ([route render offset batch]
     (let [type-key (internal/get-type-key batch)
           fns ((keyword (:render render)) processing/graph-types)
-          ids (sets/get-subset route)
+          ids [1 3 2598] ;(sets/get-subset route)
           id-keywords (sets/ids-to-keywords ids)
           offsets (offset/get-offsets (keyword (:offset offset)) ids)
           user-points (internal/get-subset id-keywords (disc/deserialize-from-disc type-key))]
@@ -97,5 +97,5 @@
 
 (defn get-records [plots]
   (map (fn [[k v]]
-          (get-plot (:set v) (:render v) (:offset v))) plots))
+          (get-plot (:set v) (:render v) (:offset v) (keyword (:batch (:batch v))))) plots))
 

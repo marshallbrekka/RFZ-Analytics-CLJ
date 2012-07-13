@@ -35,7 +35,10 @@
        (filter (:endpoints schema))
        (first)))
 
-
+(defn process-type [type-key]
+  (if (= type-key "string")
+      "input"
+      type-key))
 
 (defn make-sub-fields [input-form]
   (filter 
@@ -50,10 +53,11 @@
                  :min   {:name (first mi) :value (:min (last mi)) :type (:type (last mi))}
                  :max   {:name (first ma) :value (:max (last ma)) :type (:type (last ma))}})
                 nil)
-            {:type    (:type (last a))
+            {:type    (process-type (:type (last a)))
              :caption (:label (last a))
              :name    (first a)})) 
       input-form (conj (vec (rest input-form)) nil))))
+
 
 
 (defn get-json-spec []
