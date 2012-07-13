@@ -26,16 +26,19 @@ function getData(options) {
 function createGraph(container, data) {
     var series = [];
     for (var i = 0; i < data.length; i++) {
-	var temp = data[i].points;
-	series.push({
-            data : temp,
-            pointStart: new Date(temp[0][0]),
-            pointInterval: 24 * 3600,
-            tooltip: {
-                valueDecimals: 2
-            },
-	    name : data[i].info.set[0] + " " + data[i].info.set[1]
-        });
+	var plot = data[i];
+	for(var b = 0; b < plot.batches.length; b++) {
+	    var batch = plot.batches[b];
+	    series.push({
+		data : batch.timelines,
+		pointStart: new Date(batch.timelines[0][0]),
+		pointInterval: 24 * 3600,
+		tooltip: {
+		    valueDecimals: 2
+		},
+		    name : plot.info.set[0] + " " + data[i].info.set[1] + " : " + batch.info
+	    });
+	}
     }
 
     window.chart = new Highcharts.StockChart({

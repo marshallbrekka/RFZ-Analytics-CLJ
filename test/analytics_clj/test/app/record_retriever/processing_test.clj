@@ -1,5 +1,5 @@
-(ns record-retriever.processing-test
-  (:require [record-retriever.processing :as pr])
+(ns analytics-clj.test.app.record-retriever.processing-test
+  (:require [analytics-clj.app.record-retriever.processing :as pr])
   (:use [clojure.test]))
 
 (deftest balances-to-deltas
@@ -14,7 +14,7 @@
       (let [input [[0 10] [0 15] [0 -11.6]]
             output [0 13.4]
             input2 [[1 10] [1 -4]]
-            output2 [1 6]]
+            output2 [1 6.0]]
         (is (= (pr/merge-by-total input) output))
         (is (= (pr/merge-by-total input2) output2)))))
 
@@ -31,14 +31,14 @@
 (deftest balances-to-percent-change
    (testing "balances-to-percent-change"
       (let [input [[0 2] [1 4] [6 6] [7 4]]
-            output '([0 1/2] [1 1] [6 3/2] [7 1])
+            output '([0 -1/2] [1 1/2] [6 1/2] [7 -1/2])
             input2 [[0 0] [2 0]]
             output2 '([0 0] [2 0])]
         (is (= (pr/balances-to-percent-change input) output))
         (is (= (pr/balances-to-percent-change input2) output2)))))
 
-(deftest merge-by-average
-    (testing "merge-by-average"
+"(deftest merge-by-average
+    (testing \"merge-by-average\"
       (let [input [[0 5]]
             output {:count 1 :point [0 5]}
             input2 [[2 7] [2 7] [2 3]]
@@ -48,9 +48,9 @@
 
 
 (deftest post-merge-by-average
-    (testing "post-merge-by-average"
+    (testing \"post-merge-by-average\"
       (let [input [[] {:count 2 :point [2 4]}]
             output [[2 2]]]
-        (is (= (apply pr/post-merge-by-average input) output)))))
+        (is (= (apply pr/post-merge-by-average input) output)))))"
 
 

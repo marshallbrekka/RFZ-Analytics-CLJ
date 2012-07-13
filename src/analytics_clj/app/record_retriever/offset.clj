@@ -21,22 +21,18 @@
 
 
 (defn get-offsets [type-key user-ids]
-  (println type-key)
-  (println (type type-key))
-  (println (type (first user-ids)))
   (if (= type-key "no-offset") 
-    (do
-      (println "no offset running")
-      {})
-    (let [data (if (empty? user-ids) (run-query {:where {:type type-key}})
-               (run-query {:where {:user-id {"$in" user-ids} :type type-key}}))]
-      ;(println data)
-          (apply merge (map (fn [a] {(keyword (str (:user-id a))) (:ts a)}) data)))))
+      {}
+      (let [data (if (empty? user-ids) 
+                     (run-query {:where {:type type-key}})
+                     (run-query {:where {:user-id {"$in" user-ids} :type type-key}}))]
+        (apply merge (map (fn [a] {(keyword (str (:user-id a))) (:ts a)}) 
+                          data)))))
 
 (defn get-offset [data user-id]
-  (if (or (empty? data) (not (contains? data user-id)))
-    0
-    (user-id data)))
+  (cond (empty? data) 0
+        (contains? data user-id) (user-id data)
+        :else nil))
 
 
 (defn get-description [type-key]    

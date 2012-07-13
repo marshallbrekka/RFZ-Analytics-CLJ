@@ -7,6 +7,7 @@
     [analytics-clj.app.record-retriever.processing :as processing]
     [analytics-clj.app.record-retriever.internal :as internal]
     [analytics-clj.app.form-json :as form-json]
+    [analytics-clj.app.record-retriever.batching :as batching]
 
     ;[app.config :as config]
     ;[app.util.io :as io]
@@ -32,99 +33,69 @@
   {:count   num-users 
    :offset  (offset/get-description (:offset offset))
    :set     (sets/get-description route)
-   :type    (processing/get-description (keyword (:render render)))
-  })
+   :type    (processing/get-description (keyword (:render render)))})
 
-"
-(defn filter-merge [fns user-points]
-  (let [data (if (empty? ids)
-               {}
-               (apply concat
-                    (let [dat
-                    (map (fn [[user-id points]]
-                        (let [user-offset (offset/get-offset offsets user-id)]
-                          (->> (map (fn [p] (internal/filter-point p user-offset)) points)
-                               (filter internal/filter-nil)
-                               ((:filter fns))))) user-points)]
-                          
-                      (log (str \"sum \" (reduce (fn [a b] (+ a (last (first b)))) 0 dat)))
-                      ;(log dat)                      
-                      dat)))]"
+(defn filter-timelines [filter-fn offset timelines]
+  (map (fn [timeline] 
+         (update-in timeline [:points] 
+                    #(->> (map (fn [point] (internal/apply-offset offset point)) %) 
+                          (filter internal/filter-nil)
+                          (filter-fn)))) timelines))
 
-   
+(defn merge-batches [merge-fn post-merge-fn batches]
+  (map (fn [batch]
+          (update-in batch [:timelines] 
+            #(internal/merge-data 
+                %
+                merge-fn 
+                post-merge-fn))) batches))
 
+(defn build-plot-spec [route render offset num-ids batches]
+   {:info    (get-plot-description route render offset num-ids)
+    :batches  batches})
 
-(defn get-records-for-plot [route render offset]
-  (log (str route " " render " " offset))
-  (let [fns ((keyword (:render render)) processing/graph-types) 
-        ids (sets/get-subset route)
-        id-keywords (sets/ids-to-keywords ids)
-        offsets (offset/get-offsets (keyword (:offset offset)) ids)
-        user-points (internal/get-subset id-keywords (disc/deserialize-from-disc true))
-       
-        ;l (log id-keywords)
-        l (log "num users " (count ids))
-        l (log "num u points " (count user-points))
-        l (log (count (first user-points)))
-        ;l (log (first user-points))
-        data (if (empty? ids)
-               {}
-               (apply concat
-                    (let [dat
-                    (map (fn [[user-id points]]
-                        (let [user-offset (offset/get-offset offsets user-id)]
-                          (->> (map (fn [p] (internal/filter-point p user-offset)) points)
-                               (filter internal/filter-nil)
-                               ((:filter fns))))) user-points)]
-                          
-                      (log (str "sum " (reduce (fn [a b] (+ a (last (first b)))) 0 dat)))
-                      ;(log dat)                      
-                      dat)))]
-                                       
-    ;(log data)
-    (log "filter completed")
-    (log (count data))
-    (log (type data))
-    (log (first data))
-    {:info    (get-plot-description route render offset (count ids))
-     :points  (internal/merge-data data (:merge fns) (:post-merge fns))
-    } ))
+(defn filter-out-empty-timelines [users]
+  (->> (map (fn [timelines] 
+              (filter #(-> (:points %)
+                           (empty?)
+                           (not= true))
+                      timelines))
+            users)
+       (filter #(-> (empty? %)
+                    (not= true)))))
+
+(defn process-plot-data [user-points offsets batch-type fns]
+  (log "user points")
+  (log user-points)
+  (->> (map (fn [[id timelines]] 
+              (filter-timelines
+                (:filter fns) 
+                (offset/get-offset offsets id)
+                timelines))
+            user-points)
+        (filter-out-empty-timelines)
+        (batching/batch batch-type)
+        (merge-batches (:merge fns) (:post-merge fns))))
 
 
+(defn get-plot
+  ([route render offset batch]
+    (let [type-key (internal/get-type-key batch)
+          fns ((keyword (:render render)) processing/graph-types)
+          ids (sets/get-subset route)
+          id-keywords (sets/ids-to-keywords ids)
+          offsets (offset/get-offsets (keyword (:offset offset)) ids)
+          user-points (internal/get-subset id-keywords (disc/deserialize-from-disc type-key))]
 
-(defn get-records-for-plot-seperate [route render offset]
-  (let [fns ((keyword (:render render)) processing/graph-types) 
-        ids (sets/get-subset route)
-        id-keywords (sets/ids-to-keywords ids)
-        offsets (offset/get-offsets (keyword (:offset offset)) ids)
-        user-data (internal/get-subset id-keywords (disc/deserialize-from-disc false) (fn [a] (= (:type a) "credits")) false)
-        l (log (count user-data))
-        data (map (fn [[user-id points]]
-                (let [user-offset (offset/get-offset offsets user-id)
-                      redat
-                  (map (fn [v]
-                      (->> (map #(internal/filter-point % user-offset) v)
-                           (filter internal/filter-nil))) 
-                      points)] 
-                  redat)) user-data)]
-
-    (log "filter completed")
-    (log (count data))
-    (log (count (first data)))
-    (log (first data))
-    data))
+      (->> (process-plot-data user-points offsets batch fns)
+           (build-plot-spec route render offset (count ids)))))
+  ([route render offset] (get-plot route render offset :merged)))
 
 
+    
 
 
 (defn get-records [plots]
-  ;(filter (fn [v] (not= v nil)) (reduce (fn [a b] (apply conj a b)) [] 
-      (map (fn [[k v]]
-         (if (= (:render v) "accounts")
-           (reduce (fn [a b]
-                    (if (empty? b)
-                     a
-                     (apply conj a b))) [] (get-records-for-plot-seperate (:set v) (:render v) (:offset v)))
-           (get-records-for-plot (:set v) (:render v) (:offset v)))) plots))
-;))
+  (map (fn [[k v]]
+          (get-plot (:set v) (:render v) (:offset v))) plots))
 

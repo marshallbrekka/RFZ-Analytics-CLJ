@@ -1,80 +1,78 @@
-(ns analytics-clj.app.record-retriever.internal)
+(ns analytics-clj.app.record-retriever.internal
+  (:require [analytics-clj.app.record-retriever.batching :as batching]))
 (defn now [] (java.util.Date.))
-(defn log [msg]
-  (println (now) msg))
+(defn log [& msg]
+  (do (apply println (now) msg)))
+(defn log-out [& args]
+  (do (apply log (butlast args))
+      (last args)))
 
 (defn filter-nil [point]
-  (not (nil? point)))
-
-
-
+  (not= point nil))
 
 (defn get-day [ts]
-  (let [ts 
-        (if (> ts 1000000000000)
-          (/ ts 1000)
-          ts)]
-    (* (int (Math/floor (float (/ ts (* 60 60 24))))) 60 60 24 1000)))
+  (let [day (* 60 60 24)]
+    (-> (if (> ts 1000000000000)
+            (/ ts 1000)
+            ts)
+        (/ day)
+        (double)
+        (Math/floor)
+        (int)
+        (* day 1000))))
 
 (defn build-plot [points options info]
-  {:points points :options options :info info})
+  {:points points 
+   :options options 
+   :info info})
 
-(defn filter-point [point offset]
- ;(log (str point offset)) 
-    (when (and (first point) (not= (first point) 0))
-      (let [
-            balance (last point) 
+
+(defn get-type-key [batch]
+  (if (:accounts (batch batching/types))
+      :seperate
+      :merged))
+
+
+(defn apply-offset [offset point ]
+    (when (and (first point) 
+               (not= (first point) 0) 
+               (filter-nil offset))
+      (let [balance (last point) 
             ts (- (first point) (get-day offset))]
-      [ts balance])))
- 
-
+        [ts balance])))
 
 
 
 (defn get-subset 
-  ([user-ids data filter-fn flat?]
-  ;(log (str (type user-ids) user-ids))
-  (log (str "uids " (count user-ids) " " (count data)))
+  ([user-ids data filter-fn]
+  (log "uids " (count user-ids) " " (count data))
   (if (empty? user-ids)
-    data
-    (reduce (fn [new-map user-id] 
-              (if (or (nil? user-id) (contains? data user-id))
-                  (merge new-map {user-id (let [filtered (filter filter-fn (user-id data))]
-                                            ;(log filtered)
-                                  (if flat? (:points (first filtered)) (map :points filtered)))}) 
-                  new-map)) {} user-ids)))
-  ([user-ids data] (get-subset user-ids data (fn [a] true) true)))
+      data
+      (reduce (fn [new-list user-id] 
+              (if (contains? data user-id)
+                  (let [timelines (filter filter-fn
+                                    (user-id data))]
+                    (if (empty? timelines)
+                        new-list
+                        (merge new-list
+                               {user-id timelines})))
+                  new-list)) 
+            {}
+            user-ids)))
+  ([user-ids data] (get-subset user-ids data (fn [a] true))))
 
 (defn merge-data [data merge-fn post-merge-fn]
+
   (log (str "merge start " (count data)))
-  (let [data (sort-by first data)
-        l (log "sorted")
-        data (filter (fn [pt] 
-                           (if (nil? pt)
-                             (println "found nil in filter"))
-                             (not (nil? pt))) data)
-
-
-    
-    l (log "sort complete, merging")
-        merged (pmap merge-fn (partition-by (fn [a] 
-          (if (nil? a)
-            (println "partition by found nil item")
-            (if (nil? (first a))
-              (println "partition by first found nil")))
-                                  (first a)) data))
-    l (log "merged")
-    l (log (take 10 merged))
-
-    ;l (log merged)
-    
-    l (log "merged complete, starting post-merge")
-    ;l (log (take 10 merged))
-    ;l (log (str "number of points " (count merged)))
-
-    re (reduce post-merge-fn nil merged)]
-    (log "end")
-    re)) 
-
+  (->> (reduce #(apply conj % %2) '() data)
+       (sort-by first)
+       (log-out "sorted")
+       (filter filter-nil)
+       (log-out "filtered nil, merging")
+       (partition-by first)
+       (pmap merge-fn)
+       (log-out "merged, starting post merge")
+       (reduce post-merge-fn nil)
+       (log-out "post merge complete")))
 
 

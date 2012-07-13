@@ -7,7 +7,6 @@
                            [noir "1.3.0-beta7"]
                            [org.clojure/tools.logging "0.2.3"]
                            [clj-ical "1.1"]
-                           [cheshire "4.0.0"]
                            [stencil "0.2.0"]
                            [congomongo "0.1.9"]
                            [korma "0.3.0-beta10"]

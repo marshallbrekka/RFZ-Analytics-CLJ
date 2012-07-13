@@ -1,5 +1,5 @@
-(ns record-retriever.disc-test
-  (:require [record-retriever.disc :as disc])
+(ns analytics-clj.test.app.record-retriever.disc-test
+  (:require [analytics-clj.app.record-retriever.disc :as disc])
   (:use [clojure.test]))
 
 (deftest get-day-balances 
@@ -59,7 +59,7 @@
                    {:ts-day 20 :balance 0}]
                   [{:ts-day 0 :balance 3}
                    {:ts-day 4 :balance 5}]]]
-      (is (= (disc/extend-to-start-date start-date input) output)))))
+      (is (= (disc/extend-to-start-date input start-date) output)))))
       
 (deftest get-first-day-from-accounts
   (testing "get-first-day-from-accounts"
@@ -71,36 +71,38 @@
       (is (= (disc/get-first-day-from-accounts input)) output))))
 
 
-(deftest prep-user-points
-  (testing "prep-user-points"
+(deftest merged-accounts
+  (testing "merged-accounts"
     (let [input [{:user-id 0 :account-id 0 :ts 1326603842001 :balance 20 :itemType "credits"} 
                  {:user-id 0 :account-id 0 :ts 1326603842000 :balance 100 :itemType "credits"} 
                  {:user-id 0 :account-id 0 :ts 1339358018251 :balance 40 :itemType "credits"}
                  {:user-id 0 :account-id 1 :ts 1326603842000 :balance 20 :itemType "credits"} 
                  {:user-id 0 :account-id 1 :ts 1339391042000 :balance 10 :itemType "credits"}]
-          output {:0 [{:type "all" :points [[1326585600000 40.00] [1339286400000 60.0] [1339372800000 50.00]]}]}
+          offsets {:0 1296703848847, :3 1296633600000, :1 1296633600000}
+          output [{:type "all" :points [[1296691200000 40] [1326585600000 40] [1339286400000 60] [1339372800000 50]]}]
           input2 [{:user-id 0 :account-id 0 :ts 1326603842001 :balance 20 :itemType "credits"} 
-                 {:user-id 0 :account-id 0 :ts 1326603842000 :balance 100 :itemType "credits"} 
+                 {:user-id 0 :account-id 0 :ts 1326603842000 :balance 100 :itemType "credits"} `
                  {:user-id 0 :account-id 0 :ts 1339358018251 :balance 40 :itemType "credits"}
                  {:user-id 0 :account-id 1 :ts 1339391042000 :balance 10 :itemType "credits"}]
-          output2 {:0 [{:type "all" :points [[1326585600000 30.00] [1339286400000 50.0] [1339372800000 50.00]]}]}]
-        (is (= (disc/prep-user-points input) output))
-        (is (= (disc/prep-user-points input2) output2)))))
+                output2 [{:type "all" :points [[1296691200000 30] [1326585600000 30] [1339286400000 50] [1339372800000 50]]}]]
+        (is (= (disc/merged-accounts input offsets) output))
+        (is (= (disc/merged-accounts input2 offsets) output2)))))
       
 
-(deftest prep-user-points-seperate-accounts
-  (testing "prep-user-points-seperate-accounts"
+(deftest seperate-accounts
+  (testing "seperate-accounts"
     (let [input [{:user-id 0 :account-id 0 :ts 1326603842001 :balance 20 :itemType "credits"} 
                  {:user-id 0 :account-id 0 :ts 1326603842000 :balance 100 :itemType "credits"} 
                  {:user-id 0 :account-id 0 :ts 1339358018251 :balance 40 :itemType "credits"}
                  {:user-id 0 :account-id 1 :ts 1326603842000 :balance 20 :itemType "credits"} 
                  {:user-id 0 :account-id 1 :ts 1339391042000 :balance 10 :itemType "credits"}]
-          output {:0 [{:type "credits" :points [[1326585600000 20.00] [1339286400000 40.0]]} {:type "credits" :points [[1326585600000 20.00] [1339372800000 10.00]]}]}
+          offsets {:0 1296703848847, :3 1296633600000, :1 1296633600000}
+          output [{:type "credits" :id 0 :points (list [1296691200000 20] [1326585600000 20] [1339286400000 40])} {:type "credits" :id 1 :points (list [1296691200000 20] [1326585600000 20] [1339372800000 10])}]
           input2 [{:user-id 0 :account-id 0 :ts 1326603842000 :balance 10 :itemType "credits"}
                   {:user-id 0 :account-id 1 :ts 1339391042000 :balance 20 :itemType "credits"}]
-          output2 {:0 [{:type "credits" :points [[1326585600000 10.00]]} {:type "credits" :points [[1326585600000 20.00] [1339372800000 20.00]]}]}]
+          output2 [{:type "credits" :id 0 :points (list [1296691200000 10] [1326585600000 10])} {:type "credits" :id 1 :points (list [1296691200000 20] [1339372800000 20])}]]
 
-      (is (= (disc/prep-user-points-seperate-accounts input) output))
-      (is (= (disc/prep-user-points-seperate-accounts input2) output2)))))
+      (is (= (disc/seperate-accounts input offsets) output))
+      (is (= (disc/seperate-accounts input2 offsets) output2)))))
 
 

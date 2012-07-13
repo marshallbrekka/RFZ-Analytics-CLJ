@@ -43,8 +43,8 @@
   (resp/json (rr/get-records plots)))
 
 (defpage [:get "/run"] []
-  (resp/json (rrd/serialize-from-mongo true)))
+  (resp/json (rrd/serialize-from-mongo :merged)))
 
 (defpage [:get "/run2"] []
-  (resp/json (rrd/serialize-from-mongo false)))
+  (resp/json (rrd/serialize-from-mongo :seperate)))
      

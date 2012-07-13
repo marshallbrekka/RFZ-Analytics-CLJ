@@ -2,51 +2,64 @@
 
 
 (defn balances-to-deltas [points]
-  (let [deltas (map (fn [[a-ts a-balance] [b-ts b-balance]]
+  (let [deltas (map 
+                 (fn [[a-ts a-balance] [b-ts b-balance]]
                     [b-ts (- b-balance a-balance)]) points (rest points))]
-    (let [x (cons (first points) deltas)]
-        x)))
+     (cons (first points) deltas)))       
 
 (defn merge-by-total [points]
-  (reduce (fn [a b]
-      [(first b) (+ (int (* 100 (last b))) (last a))]) [0 0] points))
+  (reduce 
+    (fn [a b]
+      [(first b) 
+       (-> b
+            (last)
+            (* 100)
+            (int)
+            (/ 100)
+            (double)
+            (+ (last a)))]) 
+    [0 0] points))
 
 (defn post-merge-by-total [final point]
-  (if (nil? point)
-    (println "point is nil"))
-  (let [fin (if (nil? final) [] final)
-        prev-bal (if (nil? final) 0 (* 100 (last (last final))))]
-    (conj fin [(first point) (/ (+ prev-bal (last point)) 100)])))
+  (let [fin (if (nil? final) 
+                [] 
+                final)
+        prev-bal (if (nil? final) 
+                      0 
+                      (* 100 (last (last final))))]
+    (conj fin [(first point) (double (/ (+ prev-bal (* 100 (last point))) 100))])))
 
 (defn balances-to-percent-change [points]
   (if (empty? points)
-    points
-  (let [average (/ (reduce + 
-                          (map last points)) 
-                  (count points))
-        ;l (println "average " average)
-        update-fn (if (= (double average) 0.0) (fn [a] 0) (fn [a] (- (/ a average) 1)))]
-        ;deltas (balances-to-deltas points)]
-    (balances-to-deltas (map (fn [point] (update-in point [1] update-fn)) points)))))
+      points
+      (let [average (->> points
+                         (map last)
+                         (reduce +)
+                         (#(/ % (count points))))  
+            update-fn (if (= (double average) 0.0) 
+                          (fn [a] 0) 
+                          (fn [a] (- (/ a average) 1)))]
+        (balances-to-deltas (map #(update-in % [1] update-fn) points)))))
 
-(defn merge-by-average [points]
-  (let [sum  (reduce (fn [a b] (+ a (last b))) 0 points)]
-    {:count (count points) :point [(first (first points)) sum]}))
+"(defn merge-by-average [points]
+  (let [sum  (reduce #(+ % (last %2)) 0 points)]
+    {:count (count points) 
+     :point [(first (first points)) sum]}))
    
 (defn post-merge-by-average [final point]
   (let [fin (if (nil? final) [] final)]
-      (conj fin [(first (:point point))  (last (:point point)) ])))
+      (conj fin [(first (:point point))  (/ (last (:point point)) (:count point)) ])))"
 
 
 
 
 (defn balances-to-percentage-of-start [points]
-  ;(println "pre delta points " points)
-  (let [start (last (first points))
-        start (if (= 0.0 start) 1 start)]
-    (let [bal (balances-to-deltas (map (fn [[t b]] [t (/ b start)]) points))]
-      ;(println "post deltas " bal) 
-      bal)))
+  (let [start (->> points
+                  (first)
+                  (last)
+                  (#(if (= 0.0 %) 1 %)))]
+    (balances-to-deltas (map (fn [[t b]] [t (/ b start)]) points))))
+    
 
 (defn merge-by-start [points]
   (reduce (fn [a b]
