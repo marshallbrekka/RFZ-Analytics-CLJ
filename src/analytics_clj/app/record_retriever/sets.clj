@@ -69,13 +69,28 @@
                             {(last (:route endpoint)) (make-sub-fields (:input-form endpoint))}) 
                           (:endpoints schema)))})
 
+(defn get-endpoint [route]
+  (first (filter  #(= route (last (:route %))) (:endpoints schema))))
+
+(defn process-param [route pkey pval]
+  ;(println route pkey pval)
+  ;(println (json/generate-string [route pkey pval]))
+  (let [ptype (->> (get-endpoint route)
+                   (:input-form)
+                   (filter #(= pkey (first %)))
+                   (first)
+                   (last)
+                   (:type))]
+      (if (or (= ptype "number") (= ptype "timestamp"))
+          (long (Float/parseFloat pval))
+          pval)))
 
 (defn get-subset [set-params]
     (let [route (:set set-params)
           params (->> (dissoc set-params :set)
                       (map
                        (fn [[k v]] 
-                         {k (long (Float/parseFloat v))}))
+                         {k (process-param route (name k) v)}))
                       (apply merge))
           ids (-> (str schema-url route)
                   (client/post {:headers {"Content-Type" "application/json" 

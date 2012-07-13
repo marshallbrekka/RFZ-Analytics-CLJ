@@ -39,6 +39,16 @@
      [:div#container]
      [:script (str "var formspec = " (rr/get-form-spec) "; run(); //")]]))
 
+(defpage [:get "/partner"] []
+  (html
+    [:head
+     [:title "ReadyForZero Datalytics (alpha)"]
+     [:script {:src "js/plugins/jquery-1.7.2.min.js"}]
+     [:script {:src "js/plugins/highstock.js"}]]
+    [:body 
+     [:div#container]
+     [:script {:src "js/partner.js"}]]))
+
 (defpage [:get "/api"] {:keys [plots]}
   (resp/json (rr/get-records plots)))
 
