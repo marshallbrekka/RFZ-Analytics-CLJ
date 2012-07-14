@@ -82,7 +82,7 @@
   ([route render offset batch]
     (let [type-key (internal/get-type-key batch)
           fns ((keyword (:render render)) processing/graph-types)
-          ids [1 3 2598] ;(sets/get-subset route)
+          ids (sets/get-subset route)
           id-keywords (sets/ids-to-keywords ids)
           offsets (offset/get-offsets (keyword (:offset offset)) ids)
           user-points (internal/get-subset id-keywords (disc/deserialize-from-disc type-key))]

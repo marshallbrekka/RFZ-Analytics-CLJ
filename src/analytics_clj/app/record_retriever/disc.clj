@@ -114,13 +114,21 @@
 
 (defn match-start-date-on-accounts [accounts offsets]
   
+  ;(log "accounts")
+  ;(log accounts)
+  ;(log (first (first accounts)))
   (->> (-> accounts
            (first)
            (first)
            (:user-id)
            (str)
            (keyword))
-      (offset/get-offset offsets)
+      (#(if (not= true (contains? offsets %))
+            (do (log (str % "DID NOT HAVE AN OFFSET"))
+              0)
+            ;(do (str % "did have an offset")
+            (offset/get-offset offsets %)))
+      
       (internal/get-day)
       (extend-to-start-date accounts)))
 
@@ -139,7 +147,7 @@
             (vec))}])
 
 (defn seperate-accounts [pts offsets]
-  (->> pts
+    (->> pts
        (map filter-point)
        (filter internal/filter-nil)
        (partition-by :account-id)
@@ -158,6 +166,7 @@
 
 
 (defn prep-points [pts offsets type-key]
+  ;(log "points!")
   ;(log pts)
   {(->> pts
           (first)
@@ -177,13 +186,16 @@
 
 (defn serialize-from-mongo [type-key]
   (let [user-ids (mongo/get-distinct conn mongo-collection "user-id")
-        offsets (offset/get-offsets "date-joined" user-ids)
+        ;;l (println user-ids)
+        ids user-ids
+        offsets (offset/get-offsets "date-joined" ids)
         file (file-io/open-write (:file (type-key types)))]
         (doseq [x (map (fn [uid]
                          (log uid)
                          (run-query uid {:account-id 1}))
-                       user-ids)]
-                (file-io/write-line file (prep-points x offsets type-key)))
+                       ids)]
+                (if (not= true (empty? x))
+                    (file-io/write-line file (prep-points x offsets type-key))))
         (log "done")
         (file-io/close file)))
 

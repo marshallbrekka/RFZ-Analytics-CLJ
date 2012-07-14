@@ -1,6 +1,10 @@
 (ns analytics-clj.app.record-retriever.offset
   (:require [analytics-clj.app.mongo  :as mongo]
             [analytics-clj.config     :as config]))
+(defn now [] (java.util.Date.))
+(defn log [msg]
+  (println (now) msg))
+
 
 (def offset-collection "timeseries-offsets")
 (def db (apply mongo/connect (:mongo-offset config/conf)))
@@ -21,6 +25,8 @@
 
 
 (defn get-offsets [type-key user-ids]
+  (log (type user-ids))
+  (log (type (first user-ids)))
   (if (= type-key "no-offset") 
       {}
       (let [data (if (empty? user-ids) 

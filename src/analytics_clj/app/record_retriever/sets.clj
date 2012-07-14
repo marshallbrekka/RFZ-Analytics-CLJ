@@ -107,15 +107,19 @@
 (defn get-description 
   "returns a pretty description of the set and its filter params"
   [set-params]
+  (println set-params)
   (let [route (:set set-params)
         params (dissoc set-params :set)
         data (get-endpoint route)
+        l (println "data: " data)
         filters (reduce 
                   (fn [re param]
                     (let [pkeyword (keyword (first param))
+                          l (println "pkeyword: " pkeyword)
+                          l (println "params " params)
                           pval (if (= (:type (last param)) "timestamp")
                                    (unparse (formatter "MM/dd/yy")
-                                            (from-long (long (Float/parseFloat (pkeyword param)))))
+                                            (from-long (long (Float/parseFloat (pkeyword params)))))
                                    (pkeyword params))]
                        (str re (:label (last param)) ": " pval ". ")))
                   "" (:input-form data))]
