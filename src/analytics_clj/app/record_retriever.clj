@@ -18,6 +18,12 @@
 (defn now [] (java.util.Date.))
 (defn log [& msg]
   (apply println (now) msg))
+(defn logp 
+  ([v obj]
+   (println v obj)
+   obj)
+  ([v] (logp v v)))
+
 
 
 (defn get-form-spec [] 
@@ -67,7 +73,7 @@
                     (not= true)))))
 
 (defn process-plot-data [user-points offsets batch-type fns]
-  (->> (map (fn [[id timelines]] 
+   (->> (map (fn [[id timelines]] 
               (filter-timelines
                 (:filter fns) 
                 (offset/get-offset offsets id)
@@ -92,10 +98,9 @@
   ([route render offset] (get-plot route render offset :merged)))
 
 
-    
+(def get-plot-memo (memoize get-plot))  
 
 
 (defn get-records [plots]
   (map (fn [[k v]]
-          (get-plot (:set v) (:render v) (:offset v) (keyword (:batch (:batch v))))) plots))
-
+          (get-plot-memo (:set v) (:render v) (:offset v) (keyword (:batch (:batch v))))) plots))

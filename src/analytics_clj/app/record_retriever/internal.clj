@@ -47,7 +47,7 @@
   ([user-ids data filter-fn]
   (log "uids " (count user-ids) " " (count data))
   (if (empty? user-ids)
-      data
+      '()
       (reduce (fn [new-list user-id] 
               (if (contains? data user-id)
                   (let [timelines (filter filter-fn

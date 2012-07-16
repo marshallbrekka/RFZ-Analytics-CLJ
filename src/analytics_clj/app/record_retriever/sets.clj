@@ -102,7 +102,9 @@
                                 :body (json/generate-string (assoc params :secret secret))})
                   (:body)
                   (json/parse-string))]
-      (map #(get % "id") ids)))
+      (if (empty? ids)
+          '()
+          (map #(get % "id") ids))))
 
 (defn get-description 
   "returns a pretty description of the set and its filter params"

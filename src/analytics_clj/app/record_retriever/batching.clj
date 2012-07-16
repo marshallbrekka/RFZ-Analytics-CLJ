@@ -21,8 +21,25 @@
 
 (defn merge-all [users]
   [{:info "All"
-    :timelines (reduce #(apply conj % %2)
+    :timelines (reduce (fn ([a b] (apply conj a b)) ([] '()))
                        (extract-timelines users))}])
+(defn by-type [users]
+  (let [types (atom {})]
+    (doseq [timelines users]  
+           (doseq [timeline timelines]
+                 (if (contains? @types (:type timeline))
+                      
+                     (swap! (get @types (:type timeline)) 
+                            conj 
+                            (:points timeline))
+                     (swap! types assoc (:type timeline) (atom (list (:points timeline)))))))
+      (map (fn [[label value]]
+            {:info (str "Acct Type: " label)
+             :timelines @value}) @types)))
+    
+   
+
+  
 
 
 (def types {:accounts {:label "Accounts (debugging)"
@@ -33,13 +50,16 @@
                        :accounts false}
             :merged   {:label "Flatten"
                        :fn merge-all
-                       :accounts false}})
+                       :accounts false}
+            :by-type  {:label "By Account Type"
+                       :fn by-type
+                       :accounts true}})
 
 (defn sort-map [key1 key2]
-  (let [order [:merged :users :accounts]]
+  (let [order [:merged :users :accounts :by-type]]
         (compare (.indexOf order key1)
                  (.indexOf order key2))))
-(def type-order [:merged :users :accounts])
+(def type-order [:merged :by-type :users :accounts])
 
 
 (defn batch [func-key users]

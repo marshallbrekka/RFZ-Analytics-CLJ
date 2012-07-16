@@ -31,7 +31,7 @@
                    mongo-collection 
                    {:where {:user-id user-ids 
                             :active true 
-                            :itemType {"$in" ["credits"]}} ;"loans"]} }
+                            :itemType {"$in" ["credits" "loans"]}} ;"loans"]} }
                     :sort sort-using 
                     :only {:user-id 1 
                            :ts 1 

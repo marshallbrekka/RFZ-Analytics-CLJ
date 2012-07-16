@@ -3,9 +3,9 @@
   (:use [clojure.test]))
 
 
-(def input [[{:uid 1 :id 1 :points "x"}
-             {:uid 1 :id 2 :points "y"}]
-            [{:uid 2 :id 1 :points "t"}]])
+(def input [[{:uid 1 :id 1 :type "credits" :points "x"}
+             {:uid 1 :id 2 :type "loans" :points "y"}]
+            [{:uid 2 :id 1 :type "loans" :points "t"}]])
 
 
 (deftest seperate-users
@@ -31,5 +31,15 @@
     (let [output [{:info "All"
                    :timelines (list "t" "x" "y")}]]
       (is (= (batching/merge-all input) output)))))
+
+
+(deftest by-type  
+  (testing "by-type"
+    (let [output (list {:info "Acct Type: loans"
+                        :timelines (list "t" "y")}
+                       {:info "Acct Type: credits"
+                        :timelines '("x")})]
+      (is (= (batching/by-type input) output)))))
+
 
 
