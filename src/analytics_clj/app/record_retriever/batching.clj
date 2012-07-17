@@ -4,7 +4,7 @@
   (vec 
     (map (fn [timelines]
             {:info (str "UID " (:uid (first timelines)))
-             :timelines (map :points timelines)}) 
+             :timelines (pmap :points timelines)}) 
          users)))
 
 (defn seperate-accounts [users]

@@ -34,5 +34,6 @@
                            ]
             :plugins [[lein-ring "0.7.1"]]
             :ring {:handler analytics-clj.server/handler}
-            :main analytics-clj.server)
+            :main analytics-clj.server
+            :warn-on-reflection true)
 

@@ -59,6 +59,19 @@
      (is (= (apply internal/get-subset input2) output2)))))
 
 
+(deftest put-to-days
+  (testing "put-to-days"
+    (let [data [[[0 10] [1 5] [2 -4]]
+                [[0 3] [2 8]]]
+          output {0 (list [0 3] [0 10]) 
+                  1 (list [1 5])
+                  2 (list [2 8] [2 -4])}
+          real-out (internal/put-to-days data)]
+      (dorun (map (fn [[k v]]
+             (println k)
+             (is (= @v (get output k))))
+           real-out)))))
+
 (deftest merge-data
   (testing "merge-data"
     (let [data [[[0 10] [1 5] [2 -4]]

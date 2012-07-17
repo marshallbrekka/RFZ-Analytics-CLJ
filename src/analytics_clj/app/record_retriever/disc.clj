@@ -4,12 +4,13 @@
     [analytics-clj.app.record-retriever.internal :as internal]
     [analytics-clj.app.record-retriever.offset :as offset]
     [analytics-clj.app.mongo :as mongo]
-    [analytics-clj.config :as config]))
+    [analytics-clj.config :as config]
+    [clojure.tools.logging :as lg]))
 
 
 (defn now [] (java.util.Date.))
-(defn log [msg]
-  (println (now) msg))
+(defn log [& msg]
+  (lg/info (apply str msg)))
 (defn logp [p]
   (do (println (now) p)
     p))
@@ -49,7 +50,7 @@
           filtered (get-day-balances sorted)]
       (if (>= 1 (count filtered))
         filtered
-          (apply conj [(first filtered)] (map (fn [a b] 
+          (apply conj [(first filtered)] (pmap (fn [a b] 
               (update-in b [:balance] (fn [b-balance]  (- b-balance (:balance a))))) filtered (rest filtered))))))
 
 (defn conj-account-timelines [vecs]
@@ -71,7 +72,7 @@
   (->> pts
        (sort-by :ts-day)
        (partition-by :ts-day)
-       (map merge-day)))
+       (pmap merge-day)))
   
 
 (defn calc-totals-from-deltas [deltas]
@@ -79,7 +80,7 @@
           #(conj % [(first %2) 
                     (+ (last (last %)) (last %2))]) 
           [(first deltas)] (rest deltas))
-        (map #(update-in % [1] (fn [val] (-> val
+        (pmap #(update-in % [1] (fn [val] (-> val
                                            (double)
                                            (* 100)
                                            (Math/round)
@@ -90,13 +91,13 @@
 
 
 (defn get-first-day-from-accounts [accounts]
-  (->> accounts (map #(:ts-day (first %)))
+  (->> accounts (pmap #(:ts-day (first %)))
        (sort)
        (first)))
        
 
 (defn extend-to-start-date [account-pts date]
-  (map 
+  (pmap 
     (fn [account]
       (if (> (:ts-day (first account)) date)
           (cons 
@@ -136,10 +137,10 @@
 (defn merged-accounts [pts offsets]
   [{:type "all" 
     :points (->> pts 
-            (map filter-point)
+            (pmap filter-point)
             (filter internal/filter-nil)
             (partition-by :account-id)
-            (map calc-deltas)
+            (pmap calc-deltas)
             (#(match-start-date-on-accounts % offsets))
             (conj-account-timelines)
             (merge-accounts)
@@ -148,19 +149,19 @@
 
 (defn seperate-accounts [pts offsets]
     (->> pts
-       (map filter-point)
+       (pmap filter-point)
        (filter internal/filter-nil)
        (partition-by :account-id)
-       (map calc-deltas)
+       (pmap calc-deltas)
        (#(match-start-date-on-accounts % offsets))
-       (#(map (fn [fullset totals]
+       (#(pmap (fn [fullset totals]
                 {:type (:itemType (first fullset))
                  :points totals
                  :id (:account-id (first fullset))})
               %
               (->> %
-                   (map merge-accounts)
-                   (map calc-totals-from-deltas)
+                   (pmap merge-accounts)
+                   (pmap calc-totals-from-deltas)
                    (vec))))))
 
 
@@ -185,17 +186,20 @@
 
 
 (defn serialize-from-mongo [type-key]
+  (log "running serialize for type " type-key)
   (let [user-ids (mongo/get-distinct conn mongo-collection "user-id")
         ;;l (println user-ids)
         ids user-ids
         offsets (offset/get-offsets "date-joined" ids)
         file (file-io/open-write (:file (type-key types)))]
-        (doseq [x (map (fn [uid]
-                         (log uid)
-                         (run-query uid {:account-id 1}))
-                       ids)]
-                (if (not= true (empty? x))
+        (dorun (pmap (fn [x] (if (not= true (empty? x))
                     (file-io/write-line file (prep-points x offsets type-key))))
+                    (pmap (fn [uid]
+                         (log uid)
+                         (let [y (doall (run-query uid {:account-id 1}))]
+                           (log "finished " uid);
+                           y))
+                       ids)))
         (log "done")
         (file-io/close file)))
 
@@ -209,8 +213,8 @@
                      (file-io/open)
                      (file-io/read-lines)) 
                  data-obj)]
-    (if (nil? data-obj)
-        (reset! (:data (type-key types)) data))
+    ;(if (nil? data-obj)
+        ;(reset! (:data (type-key types)) data))
     data))
 
 

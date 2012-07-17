@@ -18,6 +18,11 @@
 (defn now [] (java.util.Date.))
 (defn log [& msg]
   (apply println (now) msg))
+
+(defn log-out [& msg]
+  (apply println (now) (butlast msg))
+  (last msg))
+
 (defn logp 
   ([v obj]
    (println v obj)
@@ -79,8 +84,11 @@
                 (offset/get-offset offsets id)
                 timelines id))
             user-points)
+        (log-out "applied offsets")
         (filter-out-empty-timelines)
+        (log-out "filtered empty")
         (batching/batch batch-type)
+        (log-out "batched")
         (merge-batches (:merge fns) (:post-merge fns))))
 
 
@@ -88,10 +96,16 @@
   ([route render offset batch]
     (let [type-key (internal/get-type-key batch)
           fns ((keyword (:render render)) processing/graph-types)
+          l (log "pre ids")
           ids (sets/get-subset route)
+          ;l (log ids)
+          l (log "post ids")
           id-keywords (sets/ids-to-keywords ids)
+          l (log "post-keywords")
           offsets (offset/get-offsets (keyword (:offset offset)) ids)
-          user-points (internal/get-subset id-keywords (disc/deserialize-from-disc type-key))]
+          l (log "post offsets")
+          user-points (internal/get-subset id-keywords (disc/deserialize-from-disc type-key))
+          l (log "post user-points")]
 
       (->> (process-plot-data user-points offsets batch fns)
            (build-plot-spec route render offset (count ids)))))
@@ -102,5 +116,8 @@
 
 
 (defn get-records [plots]
+  ;(set! *warn-on-reflection* true)
   (map (fn [[k v]]
-          (get-plot-memo (:set v) (:render v) (:offset v) (keyword (:batch (:batch v))))) plots))
+          (get-plot-memo (:set v) (:render v) (:offset v) (if (contains? v :batch)
+                                                              (keyword (:batch (:batch v)))
+                                                              :merged))) plots))

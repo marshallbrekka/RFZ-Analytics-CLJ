@@ -7,6 +7,10 @@
   (do (apply log (butlast args))
       (last args)))
 
+(defn logp [obj]
+  (println obj)
+  obj)
+
 (defn filter-nil [point]
   (not= point nil))
 
@@ -61,16 +65,46 @@
             user-ids)))
   ([user-ids data] (get-subset user-ids data (fn [a] true))))
 
+(defn find-first-day [timelines]
+  (reduce (fn [prev timeline]
+            (if ( < (first (first timeline)) prev)
+                (first (first timeline))
+                prev))
+          (first (first (first timelines))) (rest timelines)))
+
+(defn get-vector-index-from-day [offset day]
+  (/ (- day offset) 86400000))
+
+(defn put-to-days [timelines]
+  (let [start-day (find-first-day timelines)
+        days (vec (repeatedly 1042 #(atom '())))]
+    (dorun (pmap (fn [timeline]
+                    (dorun (pmap (fn [day] 
+                                 (if (nil? (first day))
+                                   (log (str "nil timeline day : " timeline))
+                                    (swap! (get days (get-vector-index-from-day start-day (first day))) conj day)))
+                              timeline)))
+                timelines))
+    (log "pre into")
+    days))
+
+
 (defn merge-data [data merge-fn post-merge-fn]
 
   (log (str "merge start " (count data)))
-  (->> (reduce #(apply conj % %2) '() data)
-       (sort-by first)
-       (log-out "sorted")
-       (filter filter-nil)
-       (log-out "filtered nil, merging")
-       (partition-by first)
-       (pmap merge-fn)
+  ;(log (str "first day " (find-first-day data)))
+  (->> (put-to-days data)
+       ;(reduce #(apply conj % %2) '() data)
+       (log-out "reduced")
+       ;(sort-by first)
+       ;(log-out "sorted")
+       ;(filter filter-nil)
+       ;(log-out "filtered nil, merging")
+       ;(partition-by first)
+       ;(logp)
+       (filter (fn [a] (not= true (empty? @a))))
+       (log-out "filtered empty vector places")
+       (map (fn [v] (merge-fn @v)))
        (log-out "merged, starting post merge")
        (reduce post-merge-fn nil)
        (log-out "post merge complete")))

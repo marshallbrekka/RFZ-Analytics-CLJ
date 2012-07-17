@@ -57,17 +57,21 @@ function Partner(selector, globOptions) {
 
     function createGraph(container, data) {
 	var series = [];
+	
 	for (var i = 0; i < data.length; i++) {
-	    var temp = data[i];
+	var plot = data[i];
+	for(var b = 0; b < plot.batches.length; b++) {
+	    var batch = plot.batches[b];
 	    series.push({
-		data : temp,
-		pointStart: new Date(temp[0][0]),
-		
+		data : batch.timelines,
+		pointStart: new Date(batch.timelines[0][0]),
 		tooltip: {
 		    valueDecimals: 2
 		}
 	    });
 	}
+    }
+
 
 	function formatter() {
 	    var interval = this.axis.tickInterval;
@@ -143,7 +147,8 @@ new Partner("#container", {
 	"plots[0][set][set]":"/subset/partner-users",
 	"plots[0][set][email]":"citi@readyforzero.com",
 	"plots[0][offset][offset]":"date-joined",
-	"plots[0][render][render]":"total"
+	"plots[0][render][render]":"total",
+	"plots[0][batch][batch]":"merged"
     }
 });
 	

@@ -27,13 +27,17 @@
 (defn get-offsets [type-key user-ids]
   (log (type user-ids))
   (log (type (first user-ids)))
-  (if (= type-key "no-offset") 
+  (if (= type-key :no-offset) 
       {}
       (let [data (if (empty? user-ids) 
                      (run-query {:where {:type type-key}})
-                     (run-query {:where {:user-id {"$in" user-ids} :type type-key}}))]
+                     (do
+                       (log "pre query")
+                     (doall (run-query {:where {:user-id {"$in" user-ids} :type type-key}}))))]
+        (do
+          (log "post query")
         (apply merge (map (fn [a] {(keyword (str (:user-id a))) (:ts a)}) 
-                          data)))))
+                          data))))))
 
 (defn get-offset [data user-id]
   (cond (empty? data) 0

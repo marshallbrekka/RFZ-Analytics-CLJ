@@ -1,7 +1,7 @@
 (ns analytics-clj.config)
 (def test-env {
     :mongo-offset ["mydb" "10.10.10.106" 27019]
-    :mongo-balances ["mydb"]
+    :mongo-balances ["mydb" "10.10.10.106" 27019] ;["mydb"]
     :data-files "/rfz/analytics"
               })
 (def prod-env {
@@ -11,3 +11,4 @@
                })
 
 (def conf (if (get (into {} (System/getenv)) "RFZ_ANALYTICS_DEV") test-env prod-env))
+
