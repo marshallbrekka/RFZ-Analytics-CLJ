@@ -1,11 +1,12 @@
 (ns analytics-clj.app.record-retriever.sets
   (:require [cheshire.core :as json]
             [clj-http.client :as client]
-            [analytics-clj.app.file-io :as file-io])
+            [analytics-clj.app.file-io :as file-io]
+            [analytics-clj.config      :as config])
   (:use 
             [clj-time.format]
             [clj-time.coerce]))
-(def schema-url "https://beta.readyforzero.com/api/stat")
+(def schema-url (:endpoint-url config/conf))
 (def secret (file-io/read-first-line (file-io/open "secret.txt")))
 
 (defn create-schema-keys [schema]
@@ -53,10 +54,13 @@
                  :min   {:name (first mi) :value (:min (last mi)) :type (:type (last mi))}
                  :max   {:name (first ma) :value (:max (last ma)) :type (:type (last ma))}})
                 nil)
-            {:type    (process-type (:type (last a)))
-             :caption (:label (last a))
-             :name    (first a)})) 
-      input-form (conj (vec (rest input-form)) nil))))
+            (-> {:type    (process-type (:type (last a)))
+                 :caption (:label (last a))
+                 :name    (first a)}
+              (#(if (contains? (last a) :options)
+                    (assoc % :options (:options (last a)))
+                    %))))) 
+        input-form (conj (vec (rest input-form)) nil))))
 
 
 

@@ -141,6 +141,8 @@ function Partner(selector, globOptions) {
 window.Partner = Partner;
 })();
 
+
+
 new Partner("#container", {
     url : "http://localhost:8888/",
     params : {

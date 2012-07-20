@@ -82,31 +82,24 @@
                     (dorun (pmap (fn [day] 
                                  (if (nil? (first day))
                                    (log (str "nil timeline day : " timeline))
-                                    (swap! (get days (get-vector-index-from-day start-day (first day))) conj day)))
+                                   (swap! (get days (get-vector-index-from-day start-day (first day))) conj day)))
                               timeline)))
                 timelines))
     (log "pre into")
     days))
 
 
-(defn merge-data [data merge-fn post-merge-fn]
+(defn merge-data [data merge-fn post-merge-fn final]
 
   (log (str "merge start " (count data)))
-  ;(log (str "first day " (find-first-day data)))
   (->> (put-to-days data)
-       ;(reduce #(apply conj % %2) '() data)
        (log-out "reduced")
-       ;(sort-by first)
-       ;(log-out "sorted")
-       ;(filter filter-nil)
-       ;(log-out "filtered nil, merging")
-       ;(partition-by first)
-       ;(logp)
        (filter (fn [a] (not= true (empty? @a))))
        (log-out "filtered empty vector places")
        (map (fn [v] (merge-fn @v)))
        (log-out "merged, starting post merge")
        (reduce post-merge-fn nil)
+       (map final (repeat (count data)))
        (log-out "post merge complete")))
 
 

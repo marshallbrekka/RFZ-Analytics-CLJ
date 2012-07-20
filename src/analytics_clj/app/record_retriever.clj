@@ -55,13 +55,14 @@
                               (filter-fn)))
              (merge {:uid (read-string (name id))}))) timelines))
 
-(defn merge-batches [merge-fn post-merge-fn batches]
+(defn merge-batches [merge-fn post-merge-fn final-fn batches]
   (map (fn [batch]
           (update-in batch [:timelines] 
             #(internal/merge-data 
                 %
                 merge-fn
-                post-merge-fn))) batches))
+                post-merge-fn
+                final-fn))) batches))
 
 (defn build-plot-spec [route render offset num-ids batches]
    {:info    (get-plot-description route render offset num-ids)
@@ -70,7 +71,7 @@
 (defn filter-out-empty-timelines [users]
   (->> (map (fn [timelines] 
               (filter #(-> (:points %)
-                           (empty?)
+                           ((fn [a] (or (empty? a) (nil? (first a)))))
                            (not= true))
                       timelines))
             users)
@@ -89,7 +90,7 @@
         (log-out "filtered empty")
         (batching/batch batch-type)
         (log-out "batched")
-        (merge-batches (:merge fns) (:post-merge fns))))
+        (merge-batches (:merge fns) (:post-merge fns) (:final fns))))
 
 
 (defn get-plot
