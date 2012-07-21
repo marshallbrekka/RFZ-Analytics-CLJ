@@ -45,11 +45,13 @@
 
 
 (defn balances-to-percentage-of-start [points]
-  (let [start (->> points
-                  (first)
-                  (last)
-                  (#(if (= 0.0 (double %)) 1 %)))]
-    (balances-to-deltas (pmap (fn [[t b]] [t (/ b start)]) points))))
+  (if (empty? points)
+    points
+    (let [start (->> points
+                     (first)
+                     (last)
+                     (#(if (= 0.0 (double %)) 1 %)))]
+      (balances-to-deltas (pmap (fn [[t b]] [t (/ b start)]) points)))))
     
 
 (defn merge-by-start [points]

@@ -50,15 +50,15 @@
 (defn filter-timelines [filter-fn offset timelines id]
   (map (fn [timeline] 
          (-> (update-in timeline [:points] 
-                        #(->> (map (fn [point] (internal/apply-offset offset point)) %) 
+                        #(->> (map (fn [point] (internal/apply-offset offset point)) %)
                               (filter internal/filter-nil)
                               (filter-fn)))
              (merge {:uid (read-string (name id))}))) timelines))
 
 (defn merge-batches [merge-fn post-merge-fn final-fn batches]
   (map (fn [batch]
-          (update-in batch [:timelines] 
-            #(internal/merge-data 
+          (update-in batch [:timelines]
+            #(internal/merge-data
                 %
                 merge-fn
                 post-merge-fn
@@ -79,6 +79,7 @@
                     (not= true)))))
 
 (defn process-plot-data [user-points offsets batch-type fns]
+   ;(println user-points)
    (->> (map (fn [[id timelines]] 
               (filter-timelines
                 (:filter fns) 
@@ -88,6 +89,7 @@
         (log-out "applied offsets")
         (filter-out-empty-timelines)
         (log-out "filtered empty")
+        ;(#(log-out % %))
         (batching/batch batch-type)
         (log-out "batched")
         (merge-batches (:merge fns) (:post-merge fns) (:final fns))))
