@@ -98,7 +98,7 @@
     (let [type-key (internal/get-type-key batch)
           fns ((keyword (:render render)) processing/graph-types)
           l (log "pre ids")
-          ids (sets/get-subset route)
+          ids (sets/get-combined-sets route)
           ;l (log ids)
           l (log "post ids")
           id-keywords (sets/ids-to-keywords ids)
