@@ -23,13 +23,13 @@ function FormBuilder(submitCallback, spec) {
 
 FormBuilder.prototype._getFieldTypes = function(fields, spec) {
     for (var field in spec) {
-	//console.log(field);
-	if (typeof spec[field] == "object") {
-	    //console.log("about to parse object");
-	    fields = this._getFieldTypes(fields, spec[field]);
-	} else if (field == "name") {
-	    fields[spec[field]] = spec.type;
-	}
+	    //console.log(field);
+	    if (typeof spec[field] == "object") {
+	        //console.log("about to parse object");
+	        fields = this._getFieldTypes(fields, spec[field]);
+	    } else if (field == "name") {
+	        fields[spec[field]] = spec.type;
+	    }
     }
     return fields;    
 }
@@ -72,21 +72,89 @@ FormBuilder.Set = function(removeCallback, spec) {
     var self = this;
     this.container = $('<div>');
     this.container.append($('<a href="#remove" class="remove">Remove</a>').click(function() {
-	self.container.remove();	    
-	removeCallback(self);
+	    self.container.remove();	    
+	    removeCallback(self);
     }));
 
     for(var i = 0; i < spec.length; i++) {
-	this.container.dform(spec[i]);
+        if (spec[i].multiple !== undefined) {
+            this.container.append(this.multiple(spec[i]));
+        } else {
+            this.container.dform(spec[i]);
+        }
     }
 }
 
 FormBuilder.Set.prototype.getValues = function() {
-    var vals = {};
+    var self = this,
+        vals = {},
+        multiNames = {};
+        var nsCount = 0;
+        var ns = null;
+
+    this.container.find('.multi-field').each(function() {
+                 $(this).find(':input').each(function() {
+            var namespace = this.name.substr(0, this.name.indexOf("]") + 1);
+            if(ns != namespace) {
+                ns = namespace;
+                nsCount = 0;
+            }
+            multiNames[this.name] = true;
+            vals[self.splitNameWithIndex(this.name, nsCount)] = $(this).val();
+        });
+        nsCount++;
+    });
+
+            
     this.container.find(':input').each(function() {
-	vals[this.name] = $(this).val();
+        if(multiNames[this.name] == undefined) {
+        	vals[this.name] = $(this).val();
+        }
     });
     return vals;
+}
+
+FormBuilder.Set.prototype.splitNameWithIndex = function(name, index) {
+    var split = name.indexOf("]") + 1;
+    return name.substr(0, split) + "[" + index + "]" + name.substr(split);
+}
+
+
+FormBuilder.Set.prototype.multiple = function(spec) {
+    var subContainer = $('<div/>');
+    var self = this;
+    function removed() {
+        var fields = subContainer.find('.form-remove-field');
+        if(fields.length < 2) {
+            return false;
+        } else if (fields.length == 2) {
+           fields.removeClass("active");
+        }
+        return true;
+    }
+    var add = $('<a href="#addfield">Add</a>').click(function() {
+        subContainer.find('.form-remove-field').addClass('active');
+        subContainer.append(self.multipleAdd(spec, removed));
+        return false;
+    });
+    subContainer.append(add);
+    subContainer.append(this.multipleAdd(spec, removed));
+    delete spec.caption;
+    return subContainer;
+}
+
+FormBuilder.Set.prototype.multipleAdd = function(spec, removeFn) {
+    var container = $('<div class="multi-field"/>');
+    var remove = $('<a href="#removefield" class="form-remove-field">Remove</a>').click(function() {
+        var canRemove = removeFn();
+        if (canRemove) {
+            container.remove();
+        }
+        return false;
+    });
+    container.append(remove);
+    container.dform(spec);
+    return container;
 }
 
 

@@ -5,7 +5,8 @@
             [analytics-clj.config      :as config])
   (:use 
             [clj-time.format]
-            [clj-time.coerce]))
+            [clj-time.coerce]
+            [clojure.set :only [intersection]]))
 (def schema-url (:endpoint-url config/conf))
 (def secret (file-io/read-first-line (file-io/open "secret.txt")))
 
@@ -68,6 +69,7 @@
   {:type   "select-sub-fields"
    :caption "User Set"
    :name    "set"
+   :multiple true
    :options (apply merge (map 
                            (fn [endpoint] 
                              {(last (:route endpoint)) (:info endpoint)}) 
@@ -94,6 +96,7 @@
           pval)))
 
 (defn get-subset [set-params]
+  (println "set params!!!!!!!! " set-params)
     (let [route (:set set-params)
           params (->> (dissoc set-params :set)
                       (map
@@ -109,6 +112,13 @@
       (if (empty? ids)
           '()
           (map #(get % "id") ids))))
+
+(defn get-combined-sets [sets]
+  (println "sets!!!!!!!!!!!! "  sets)
+  (->> (pmap (fn [[k v]] (get-subset v)) sets)
+       (map set)
+       (apply intersection)))
+      
 
 (defn get-description 
   "returns a pretty description of the set and its filter params"

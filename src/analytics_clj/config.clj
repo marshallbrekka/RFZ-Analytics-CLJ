@@ -3,7 +3,7 @@
     :mongo-offset ["mydb" "10.10.10.106" 27019]
     :mongo-balances ["mydb" "10.10.10.106" 27019] ;["mydb"]
     :data-files "/rfz/analytics"
-    :endpoint-url "http://localhost:8001/api/stat"
+    :endpoint-url "https://beta.readyforzero.com/api/stat"
               })
 (def prod-env {
     :mongo-offset ["mydb" "ec2-23-22-195-8.compute-1.amazonaws.com" 27017]
